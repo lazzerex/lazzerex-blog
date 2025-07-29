@@ -79,14 +79,24 @@ function displayPosts() {
     postsToShow.forEach(post => {
         const blogCard = document.createElement('article');
         blogCard.className = 'blog-card scroll-animate';
+        
+        // Create thumbnail HTML if thumbnail exists
+        const thumbnailHTML = post.thumbnail ? 
+            `<div class="blog-thumbnail">
+                <img src="${post.thumbnail}" alt="${post.title}" loading="lazy">
+            </div>` : '';
+
         blogCard.innerHTML = `
-            <div class="blog-meta">
-                <span class="blog-date">${post.date}</span>
-                <span class="blog-tag">${post.tag}</span>
+            ${thumbnailHTML}
+            <div class="blog-content">
+                <div class="blog-meta">
+                    <span class="blog-date">${post.date}</span>
+                    <span class="blog-tag">${post.tag}</span>
+                </div>
+                <h3>${post.title}</h3>
+                <p class="blog-summary">${post.summary}</p>
+                <a href="${post.link}" target="_blank" class="read-more">Read Full Blog</a>
             </div>
-            <h3>${post.title}</h3>
-            <p class="blog-summary">${post.summary}</p>
-            <a href="${post.link}" target="_blank" class="read-more">Read Full Blog</a>
         `;
         blogGrid.appendChild(blogCard);
     });

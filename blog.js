@@ -6,7 +6,8 @@ const blogPosts = [
         tag: "Music",
         title: "The Bittersweet Beauty Of Youth In “Sakurazuki”",
         summary: "“Sakurazuki” is the fifth single by Sakurazaka46, featuring lyrics by Yasushi Akimoto and another memorable composition from Nazca. In my opinion, it's the group's most emotionally resonant tracks, weaving together the universal themes of first love, growing up, and the painful beauty of letting go.",
-        link: "https://wholesale-bowler-01e.notion.site/The-Bittersweet-Beauty-Of-Youth-In-Sakurazuki-23f3fbb9906a8079b760f1082eead152"
+        link: "https://wholesale-bowler-01e.notion.site/The-Bittersweet-Beauty-Of-Youth-In-Sakurazuki-23f3fbb9906a8079b760f1082eead152",
+        thumbnail: "images/sakurazuki-thumbnail.jpg" // Add your thumbnail path here
     },
 
     {
@@ -14,7 +15,8 @@ const blogPosts = [
         tag: "Artificial Intelligence",
         title: "Understanding AI: Clarifying Concepts Behind Everyday Interactions",
         summary: "We interact with AI systems daily, from asking ChatGPT questions to getting recommendations on streaming platforms. But despite this familiarity, there might be some struggle in understanding what artificial intelligence actually is and how it works. ",
-        link: "https://wholesale-bowler-01e.notion.site/Understanding-AI-Clarifying-Concepts-Behind-Everyday-Interactions-23b3fbb9906a80c7a490d03eff474ee2"
+        link: "https://wholesale-bowler-01e.notion.site/Understanding-AI-Clarifying-Concepts-Behind-Everyday-Interactions-23b3fbb9906a80c7a490d03eff474ee2",
+        thumbnail: "images/ai-thumbnail.jpg"
     },
 
     {
