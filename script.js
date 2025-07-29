@@ -9,18 +9,30 @@ let scene, camera, renderer, particles;
 function initThree() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer = new THREE.WebGLRenderer({ 
+        alpha: true,
+        antialias: true,
+        premultipliedAlpha: false // Helps prevent white flash
+    });
+    
+    // Set clear color to match your background
+    renderer.setClearColor(0x0f0f0f, 0); // Dark background, fully transparent
+    
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.style.position = 'fixed';
     renderer.domElement.style.top = '0';
     renderer.domElement.style.left = '0';
     renderer.domElement.style.zIndex = '-1';
     renderer.domElement.style.pointerEvents = 'none';
+    
+    // Start with canvas hidden
+    renderer.domElement.style.opacity = '0';
+    
     document.querySelector('.hero-bg').appendChild(renderer.domElement);
 
     // Create particles
     const geometry = new THREE.BufferGeometry();
-    const particleCount = 100;
+    const particleCount = 10000;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
@@ -48,6 +60,13 @@ function initThree() {
     scene.add(particles);
 
     camera.position.z = 5;
+    
+    // Fade in canvas after a short delay
+    setTimeout(() => {
+        renderer.domElement.style.transition = 'opacity 0.5s ease-in-out';
+        renderer.domElement.style.opacity = '1';
+        renderer.domElement.classList.add('ready');
+    }, 100);
 }
 
 function animateThree() {
@@ -284,4 +303,11 @@ document.addEventListener('DOMContentLoaded', function() {
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure body is visible after everything loads
+    setTimeout(() => {
+        document.body.style.opacity = '1';
+    }, 50);
 });
