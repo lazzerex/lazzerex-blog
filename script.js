@@ -104,6 +104,8 @@ function displayPosts() {
     // Trigger scroll animation for new posts
     setTimeout(() => {
         handleScroll();
+        // RE-INITIALIZE HOVER EFFECTS FOR NEW CARDS
+        initCardEffects();
     }, 100);
 }
 
