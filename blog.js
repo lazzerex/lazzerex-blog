@@ -24,7 +24,8 @@ const blogPosts = [
         tag: "Gaming, Surrealism",
         title: "Miserere:  Echoes Beyond the Canvas of Reality",
         summary: "Miserere is a haunting RPG Maker fangame that explore isolation, identity, and trauma through the fragmented dreams of a half-alien astronaut. Like Allegri's sacred composition, Miserere serves as a desperate plea for mercy in a universe of profound loneliness.",
-        link: "https://wholesale-bowler-01e.notion.site/Miserere-Echoes-Beyond-the-Canvas-of-Reality-2383fbb9906a803fa284c2261e2427a7"
+        link: "https://wholesale-bowler-01e.notion.site/Miserere-Echoes-Beyond-the-Canvas-of-Reality-2383fbb9906a803fa284c2261e2427a7",
+        thumbnail: "images/miserere.png"
     },
 
     {
@@ -32,7 +33,8 @@ const blogPosts = [
         tag: "Music",
         title: "The Art Of Leitmotif And Its Role in Undertale's Storytelling",
         summary: "Music is at the heart of Undertale's narrative, acting as more than just background ambiance. Each track is carefully crafted to reflect characters' personalities, key emotional moments, and the overall mood of the game's world. Especially, the use of leitmotif has helped to build emotional continuity and deepens the player's connection to the story.",
-        link: "https://wholesale-bowler-01e.notion.site/The-Art-Of-Leitmotif-And-Its-Role-in-Undertale-s-Storytelling-2323fbb9906a80e0bd0ecaed6ab67c34"
+        link: "https://wholesale-bowler-01e.notion.site/The-Art-Of-Leitmotif-And-Its-Role-in-Undertale-s-Storytelling-2323fbb9906a80e0bd0ecaed6ab67c34",
+        thumbnail: "images/undertale.webp"
     },
 
     {
@@ -40,7 +42,8 @@ const blogPosts = [
         tag: "Tech",
         title: "Model Context Protocol: The New Standard Reshaping API Development for the AI Era",
         summary: "Introduced by Anthropic in November 2024, Model Context Protocol, or MCP for short, has provided a new standard for AI assistants to connect to data systems.",
-        link: "https://wholesale-bowler-01e.notion.site/Model-Context-Protocol-The-New-Standard-Reshaping-API-Development-for-the-AI-Era-22e3fbb9906a80d1bcbbcb251696663d"
+        link: "https://wholesale-bowler-01e.notion.site/Model-Context-Protocol-The-New-Standard-Reshaping-API-Development-for-the-AI-Era-22e3fbb9906a80d1bcbbcb251696663d",
+        thumbnail: "images/mcp.jpg"
     },
 
     {
@@ -48,7 +51,8 @@ const blogPosts = [
         tag: "NES, System Architecture",
         title: "The System Architecture of NES",
         summary: "In this blog, I will take a closer look at the NES, one of the most iconic gaming consoles to ever release and explore how its hardware worked.",
-        link: "https://wholesale-bowler-01e.notion.site/The-System-Architecture-of-NES-22b3fbb9906a80729557ceec2ff16663"
+        link: "https://wholesale-bowler-01e.notion.site/The-System-Architecture-of-NES-22b3fbb9906a80729557ceec2ff16663",
+        thumbnail: "images/nes.jpg"
     },
 
     {
@@ -56,7 +60,8 @@ const blogPosts = [
         tag: "Programming",
         title: "My Solution to LeetCode 1353: Maximum Number of Events That Can Be Attended",
         summary: "This is my approach to solving LeetCode problem 1353. I'll use C# to demonstrate the solution, but the concepts can be applied in any programming language.",
-        link: "https://wholesale-bowler-01e.notion.site/My-Solution-to-LeetCode-1353-Maximum-Number-of-Events-That-Can-Be-Attended-2293fbb9906a802ab787e087c36fb04d"
+        link: "https://wholesale-bowler-01e.notion.site/My-Solution-to-LeetCode-1353-Maximum-Number-of-Events-That-Can-Be-Attended-2293fbb9906a802ab787e087c36fb04d",
+        thumbnail: "images/leetcode.png"
     },
 
     {
@@ -64,7 +69,8 @@ const blogPosts = [
         tag: "Programming",
         title: "Asynchronous Programming: From Callbacks to  Async/Await",
         summary: "In this blog post, I’ll try my best to cover the history of asynchronous programming, as well as its fundamental concepts, and practical applications.",
-        link: "https://wholesale-bowler-01e.notion.site/Asynchronous-Programming-From-Callbacks-to-Async-Await-2283fbb9906a80e4abb9d30f3b98dd29"
+        link: "https://wholesale-bowler-01e.notion.site/Asynchronous-Programming-From-Callbacks-to-Async-Await-2283fbb9906a80e4abb9d30f3b98dd29",
+        thumbnail: "images/async.png"
     },
 
     {
