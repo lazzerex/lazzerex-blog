@@ -2,6 +2,15 @@
 const blogPosts = [
 
     {
+        date: "August 1, 2025",
+        tag: "Technology",
+        title: "What Is An Operating System?",
+        summary: "An operating system is the backbone of any computing device, quietly managing hardware, running applications, and enabling users to interact with their machines. Whether you're using a smartphone, laptop, or server, the operating system handles everything from memory and processes to files and security. In this blog post, we'll explore what an operating system is, how it works, and why it's a vital part of modern technology.",
+        link: "https://wholesale-bowler-01e.notion.site/What-Is-An-Operating-System-2423fbb9906a808381d0fed3d355665c",
+        thumbnail: "images/operating-system.jpg" // Add your thumbnail path here
+    },
+
+    {
         date: "July 29, 2025",
         tag: "Music",
         title: "The Bittersweet Beauty Of Youth In “Sakurazuki”",
