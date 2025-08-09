@@ -2,6 +2,15 @@
 const blogPosts = [
 
     {
+        date: "August 9, 2025",
+        tag: "Programming",
+        title: "My Solution To LeetCode 231: Power Of Two",
+        summary: "This is my approach on solving today’s LeetCode, by using Logarithm and bitwise operations. I will use C# to demonstrate the solutions.",
+        link: "https://wholesale-bowler-01e.notion.site/My-Solution-To-LeetCode-231-Power-Of-Two-24a3fbb9906a8093ba64c72081c6152d",
+        thumbnail: "images/leetcode.png"
+    },
+
+    {
         date: "August 1, 2025",
         tag: "Technology",
         title: "What Is An Operating System?",
