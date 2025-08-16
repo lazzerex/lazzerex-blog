@@ -2,6 +2,15 @@
 const blogPosts = [
 
     {
+        date: "August 16, 2025",
+        tag: "Artificial Intelligence",
+        title: "The Foundation of AI Problem Solving",
+        summary: "Graph traversal algorithms form the backbone of countless AI applications, yet their importance is often overlooked in favor of more glamorous machine learning techniques. And so today, I will delve into two cornerstone algorithms that have quietly powered AI systems for decades: Depth-First Search (DFS) and Breadth-First Search (BFS).",
+        link: "https://wholesale-bowler-01e.notion.site/The-Foundation-of-AI-Problem-Solving-24c3fbb9906a80e6a5c4ee584332e4b4",
+        thumbnail: "images/dfs_bfs.png"
+    },
+
+    {
         date: "August 9, 2025",
         tag: "Programming",
         title: "My Solution To LeetCode 231: Power Of Two",
