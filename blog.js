@@ -1,6 +1,15 @@
 // Blog posts data
 const blogPosts = [
 
+     {
+        date: "August 30, 2025",
+        tag: "Physics, Programming",
+        title: "Coding the Cosmos: From Equations to Black Hole Simulations in C++",
+        summary: "Kavan's black hole simulation project beautifully demonstrates how Einstein's abstract equations can transform into tangible, visual reality. His project bridges the gap between theoretical physics and computer graphics, creating an impressive C++ implementation that brings general relativity to life through programming.",
+        link: "https://wholesale-bowler-01e.notion.site/Coding-the-Cosmos-From-Equations-to-Black-Hole-Simulations-in-C-25f3fbb9906a80609006faf8d763af29",
+        thumbnail: "images/black-hole.jpg"
+    },
+
     {
         date: "August 16, 2025",
         tag: "Artificial Intelligence",
