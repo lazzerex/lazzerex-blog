@@ -2,6 +2,15 @@
 const blogPosts = [
 
      {
+        date: "September 4, 2025",
+        tag: "Programming, Hardware",
+        title: "The Secret Behind Codes And Hardware",
+        summary: "Have you ever wondered how a simple line of code can make an LED blink or control a motor? As a developer, I've often marveled at this seemingly magical transformation from abstract instructions to physical actions in the real world.",
+        link: "https://wholesale-bowler-01e.notion.site/The-Secret-Behind-Codes-And-Hardware-2643fbb9906a80be90affcf493ad6396",
+        thumbnail: "images/hardware.jfif"
+    },
+
+     {
         date: "August 30, 2025",
         tag: "Physics, Programming",
         title: "Coding the Cosmos: From Equations to Black Hole Simulations in C++",
