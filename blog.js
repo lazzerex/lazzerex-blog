@@ -2,6 +2,15 @@
 const blogPosts = [
 
      {
+        date: "December 1, 2025",
+        tag: "Operating System",
+        title: "Getting to Know OS Installations and Storage Terminology",
+        summary: "If you've found yourself confused by the technical vocabulary surrounding OS installation and storage hardware, you're definitely not alone. ",
+        link: "https://wholesale-bowler-01e.notion.site/Getting-to-Know-OS-Installations-and-Storage-Terminology-2bc3fbb9906a803abc2bdb88878450a5",
+        thumbnail: "images/os.jpg"
+    },
+
+    {
         date: "September 4, 2025",
         tag: "Programming, Hardware",
         title: "The Secret Behind Codes And Hardware",
@@ -10,7 +19,7 @@ const blogPosts = [
         thumbnail: "images/hardware.jfif"
     },
 
-     {
+    {
         date: "August 30, 2025",
         tag: "Physics, Programming",
         title: "Coding the Cosmos: From Equations to Black Hole Simulations in C++",
