@@ -411,11 +411,33 @@ function initHeroAnimations() {
 function initMobileMenu() {
     const burger = document.querySelector('.menu-burger');
     const navLinks = document.querySelector('.nav-links');
+    const navItems = document.querySelectorAll('.nav-link');
     
     if (burger && navLinks) {
         burger.addEventListener('click', () => {
             navLinks.classList.toggle('active');
             burger.classList.toggle('active');
+            document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+        });
+        
+        // Close menu when clicking a link
+        navItems.forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                burger.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (navLinks.classList.contains('active') && 
+                !navLinks.contains(e.target) && 
+                !burger.contains(e.target)) {
+                navLinks.classList.remove('active');
+                burger.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
     }
 }

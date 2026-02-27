@@ -297,21 +297,78 @@
         @media (max-width: 1024px) {
             .contact-grid {
                 grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .contact-box h2 {
+                font-size: 28px;
             }
         }
         
         @media (max-width: 768px) {
             .contact-box {
-                padding: 35px;
+                padding: 30px 25px;
             }
             
             .contact-box-header {
                 flex-direction: column;
                 text-align: center;
+                gap: 15px;
             }
             
             .cta-section {
-                padding: 50px 30px;
+                padding: 40px 25px;
+            }
+            
+            .cta-section h2 {
+                font-size: 32px;
+            }
+            
+            .contact-button {
+                padding: 18px 30px;
+                font-size: 15px;
+            }
+            
+            .deco-shape {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .contact-box {
+                padding: 25px 20px;
+            }
+            
+            .contact-box h2 {
+                font-size: 24px;
+            }
+            
+            .contact-icon-box {
+                padding: 15px;
+            }
+            
+            .contact-button {
+                padding: 15px 25px;
+                font-size: 14px;
+            }
+            
+            .cta-section {
+                padding: 35px 20px;
+            }
+            
+            .cta-section h2 {
+                font-size: 28px;
+            }
+            
+            .email-display {
+                font-size: 18px;
+                padding: 15px 20px;
+            }
+            
+            .deco-shape {
+                width: 40px;
+                height: 40px;
             }
         }
     </style>
@@ -502,6 +559,37 @@
                 themeToggle.style.transform = 'rotate(0deg)';
             }, 300);
         });
+        
+        // Mobile Menu
+        const burger = document.querySelector('.menu-burger');
+        const navLinks = document.querySelector('.nav-links');
+        const navItems = document.querySelectorAll('.nav-link');
+        
+        if (burger && navLinks) {
+            burger.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                burger.classList.toggle('active');
+                document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+            });
+            
+            navItems.forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('active');
+                    burger.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (navLinks.classList.contains('active') && 
+                    !navLinks.contains(e.target) && 
+                    !burger.contains(e.target)) {
+                    navLinks.classList.remove('active');
+                    burger.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        }
         
         // Custom Cursor
         const cursorDot = document.querySelector('.cursor-dot');

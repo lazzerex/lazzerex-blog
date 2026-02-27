@@ -282,16 +282,22 @@
         @media (max-width: 1024px) {
             .content-grid {
                 grid-template-columns: 1fr;
+                gap: 30px;
             }
             
             .profile-grid {
                 grid-template-columns: 1fr;
                 text-align: center;
+                gap: 30px;
             }
             
             .avatar-box {
                 display: flex;
                 justify-content: center;
+            }
+            
+            .about-title-box h1 {
+                font-size: 48px;
             }
         }
         
@@ -299,26 +305,85 @@
             .about-title-box,
             .profile-section,
             .blog-mission-section {
-                padding: 40px 30px;
+                padding: 40px 25px;
             }
             
             .content-box {
-                padding: 30px;
+                padding: 25px;
             }
             
             .skills-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
             
             .avatar-main {
-                width: 200px;
-                height: 200px;
-                font-size: 100px;
+                width: 180px;
+                height: 180px;
+                font-size: 90px;
             }
             
             .avatar-shadow {
-                width: 200px;
-                height: 200px;
+                width: 180px;
+                height: 180px;
+            }
+            
+            .content-box h2 {
+                font-size: 24px;
+            }
+            
+            .about-title-box h1 {
+                font-size: 40px;
+            }
+            
+            .shape-about {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .about-title-box,
+            .profile-section,
+            .blog-mission-section {
+                padding: 30px 20px;
+            }
+            
+            .content-box {
+                padding: 20px;
+            }
+            
+            .about-title-box h1 {
+                font-size: 32px;
+            }
+            
+            .content-box h2 {
+                font-size: 20px;
+            }
+            
+            .avatar-main {
+                width: 150px;
+                height: 150px;
+                font-size: 75px;
+            }
+            
+            .avatar-shadow {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .skill-box {
+                padding: 15px;
+                font-size: 12px;
+            }
+            
+            .shape-about {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .blog-mission-section p {
+                font-size: 15px;
             }
         }
     </style>
@@ -527,6 +592,37 @@
                 themeToggle.style.transform = 'rotate(0deg)';
             }, 300);
         });
+        
+        // Mobile Menu
+        const burger = document.querySelector('.menu-burger');
+        const navLinks = document.querySelector('.nav-links');
+        const navItems = document.querySelectorAll('.nav-link');
+        
+        if (burger && navLinks) {
+            burger.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                burger.classList.toggle('active');
+                document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+            });
+            
+            navItems.forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('active');
+                    burger.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (navLinks.classList.contains('active') && 
+                    !navLinks.contains(e.target) && 
+                    !burger.contains(e.target)) {
+                    navLinks.classList.remove('active');
+                    burger.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        }
         
         // Custom Cursor
         const cursorDot = document.querySelector('.cursor-dot');
