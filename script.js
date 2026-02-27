@@ -25,6 +25,31 @@ function debounce(func, wait) {
     };
 }
 
+// ==================== THEME TOGGLE ====================
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (!themeToggle) return;
+    
+    // Check for saved theme preference or default to 'light'
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    
+    // Toggle theme
+    themeToggle.addEventListener('click', () => {
+        const theme = document.documentElement.getAttribute('data-theme');
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        // Add animation effect
+        themeToggle.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+            themeToggle.style.transform = 'rotate(0deg)';
+        }, 300);
+    });
+}
+
 // ==================== CUSTOM CURSOR ====================
 function initCustomCursor() {
     if (window.matchMedia('(pointer: coarse)').matches) return; // Skip on touch devices
@@ -416,6 +441,9 @@ function initPageLoad() {
 // ==================== INITIALIZE ALL ====================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎨 Initializing Brutalist Blog...');
+    
+    // Initialize theme first
+    initThemeToggle();
     
     // Initialize core features
     initPageLoad();
