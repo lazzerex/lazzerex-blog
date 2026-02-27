@@ -4,58 +4,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lazzerex's Blog</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <title>LAZZEREX // BLOG</title>
+    
+    <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://lazzerex.notion.site">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <header>
+    <!-- Cursor Follower -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    
+    <!-- Brutalist Grid Background -->
+    <div class="brutalist-bg">
+        <div class="grid-lines"></div>
+        <div class="floating-shapes">
+            <div class="float-shape"></div>
+            <div class="float-shape"></div>
+            <div class="float-shape"></div>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <header class="brutal-header">
+        <div class="header-border"></div>
         <nav class="container">
-            <a href="#" class="logo">Lazzerex's Blog</a>
+            <div class="logo-container">
+                <div class="logo-glitch" data-text="LAZZEREX">LAZZEREX</div>
+                <div class="logo-underline"></div>
+            </div>
             <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#blog">Blog</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
+                <li><a href="#home" class="nav-link active">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">HOME</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="#blog" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">BLOG</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="about.html" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">ABOUT</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="contact.html" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">CONTACT</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
             </ul>
+            <div class="menu-burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </nav>
+        <div class="header-border bottom"></div>
     </header>
 
-    <section class="hero" id="home">
-        <div class="hero-bg"></div>
-        <div class="hero-content">
-            <h1>Tech, Science & Sound</h1>
-            <p>My personal blog where I write about the latest trends in technology, diving deep into scientific
-                discoveries, and jamming through the worlds of music and gaming.</p>
-            <a href="#blog" class="cta-button">Dive In</a>
-        </div>
-    </section>
-
-    <section class="blog-section" id="blog">
-        <div class="container">
-            <h2 class="section-title scroll-animate">My Posts</h2>
-            <div class="blog-grid" id="blogGrid">
-                <!-- Blog posts will be inserted here by JavaScript -->
+    <!-- Hero Section -->
+    <section class="brutal-hero" id="home">
+        <div class="hero-wrapper">
+            <!-- Animated Background Elements -->
+            <div class="hero-bg-elements">
+                <div class="rotating-square"></div>
+                <div class="rotating-square delay-1"></div>
+                <div class="sliding-bar"></div>
+                <div class="sliding-bar delay-2"></div>
             </div>
             
-            <!-- Pagination Controls -->
-            <div class="pagination" id="pagination">
-                <button id="prevBtn" onclick="changePage(-1)">← Previous</button>
-                <div id="pageNumbers"></div>
-                <button id="nextBtn" onclick="changePage(1)">Next →</button>
-                <span class="pagination-info" id="pageInfo"></span>
+            <div class="hero-content-wrapper">
+                <!-- Top Section -->
+                <div class="hero-top">
+                    <div class="hero-stamp">
+                        <div class="stamp-border"></div>
+                        <span>EST. 2024</span>
+                    </div>
+                    <div class="hero-tag">
+                        <div class="tag-border"></div>
+                        <div class="tag-content">
+                            <span class="tag-label">DIGITAL THOUGHTS</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main Title -->
+                <div class="hero-main">
+                    <h1 class="hero-title">
+                        <span class="title-line">
+                            <span class="word-wrap">
+                                <span class="word" data-word="TECH">TECH</span>
+                            </span>
+                            <span class="title-cross">×</span>
+                        </span>
+                        <span class="title-line">
+                            <span class="word-wrap">
+                                <span class="word" data-word="SCIENCE">SCIENCE</span>
+                            </span>
+                            <span class="title-cross">×</span>
+                        </span>
+                        <span class="title-line">
+                            <span class="word-wrap">
+                                <span class="word" data-word="SOUND">SOUND</span>
+                            </span>
+                        </span>
+                    </h1>
+                    
+                    <div class="hero-description">
+                        <div class="description-border"></div>
+                        <p>EXPLORING THE INTERSECTION OF TECHNOLOGY, SCIENCE, MUSIC & GAMING THROUGH BOLD PERSPECTIVES</p>
+                        <div class="description-border right"></div>
+                    </div>
+                </div>
+                
+                <!-- Bottom CTA -->
+                <div class="hero-bottom">
+                    <a href="#blog" class="brutal-cta">
+                        <span class="cta-bg"></span>
+                        <span class="cta-text">EXPLORE ARTICLES</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
+                    
+                    <div class="hero-stats">
+                        <div class="stat-box">
+                            <div class="stat-number" id="postCount">0</div>
+                            <div class="stat-label">POSTS</div>
+                            <div class="stat-bar"></div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-box">
+                            <div class="stat-number">8+</div>
+                            <div class="stat-label">TOPICS</div>
+                            <div class="stat-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scroll Indicator -->
+            <div class="scroll-brutalist">
+                <div class="scroll-box">
+                    <div class="scroll-bar"></div>
+                </div>
+                <div class="scroll-text">
+                    <span>S</span>
+                    <span>C</span>
+                    <span>R</span>
+                    <span>O</span>
+                    <span>L</span>
+                    <span>L</span>
+                </div>
             </div>
         </div>
     </section>
 
-    <footer>
+    <!-- Blog Section -->
+    <section class="brutal-blog" id="blog">
         <div class="container">
-            <div class="footer-content">
-                <p>&copy; 2025 Lazzerex's Blog.</p>
-                <div class="social-links">
-                    <a href="https://github.com/lazzerex" target="_blank">GitHub</a>
+            <!-- Section Header -->
+            <div class="blog-header">
+                <div class="header-line-group">
+                    <div class="header-line-thick"></div>
+                    <div class="header-line-thin"></div>
+                </div>
+                <h2 class="blog-title">
+                    <span class="title-bracket">//</span>
+                    <span class="title-text">LATEST</span>
+                    <span class="title-text outline">ARTICLES</span>
+                </h2>
+                <div class="header-corner"></div>
+            </div>
+            
+            <!-- Filter System -->
+            <div class="filter-system">
+                <div class="filter-label">
+                    <span class="filter-icon">⚡</span>
+                    <span>FILTER:</span>
+                </div>
+                <div class="filter-tags">
+                    <button class="brutal-filter active" data-filter="all">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">ALL</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Programming">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">PROGRAMMING</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Physics">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">PHYSICS</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Music">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">MUSIC</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Artificial Intelligence">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">AI</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Gaming">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">GAMING</span>
+                    </button>
+                    <button class="brutal-filter" data-filter="Technology">
+                        <span class="filter-bg"></span>
+                        <span class="filter-text">TECH</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Blog Grid -->
+            <div class="brutal-grid" id="blogGrid">
+                <!-- Posts injected by JS -->
+            </div>
+            
+            <!-- Pagination -->
+            <div class="brutal-pagination" id="pagination">
+                <button id="prevBtn" class="pagination-brutal" onclick="changePage(-1)">
+                    <span class="pagination-bg"></span>
+                    <span class="pagination-arrow">←</span>
+                    <span class="pagination-text">PREV</span>
+                </button>
+                
+                <div id="pageNumbers" class="page-numbers-brutal"></div>
+                
+                <button id="nextBtn" class="pagination-brutal" onclick="changePage(1)">
+                    <span class="pagination-bg"></span>
+                    <span class="pagination-text">NEXT</span>
+                    <span class="pagination-arrow">→</span>
+                </button>
+            </div>
+            <div class="pagination-info" id="pageInfo"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="brutal-footer">
+        <div class="footer-pattern"></div>
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-logo-section">
+                    <div class="footer-logo-text">LAZZEREX</div>
+                    <div class="footer-tagline">
+                        <span class="tagline-bracket">[</span>
+                        <span>BUILDING · LEARNING · SHARING</span>
+                        <span class="tagline-bracket">]</span>
+                    </div>
+                </div>
+                
+                <div class="footer-links-group">
+                    <div class="footer-column">
+                        <h3 class="footer-heading">NAVIGATE</h3>
+                        <ul class="footer-list">
+                            <li><a href="#home">→ HOME</a></li>
+                            <li><a href="#blog">→ BLOG</a></li>
+                            <li><a href="about.html">→ ABOUT</a></li>
+                            <li><a href="contact.html">→ CONTACT</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-column">
+                        <h3 class="footer-heading">CONNECT</h3>
+                        <ul class="footer-list">
+                            <li><a href="https://github.com/lazzerex" target="_blank">→ GITHUB</a></li>
+                            <li><a href="#blog">→ LATEST</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-divider"></div>
+                <div class="footer-info">
+                    <p class="copyright"><span class="copyright-symbol">©</span> 2026 LAZZEREX <span class="footer-separator">|</span> ALL RIGHTS RESERVED</p>
+                    <p class="built-with">BUILT WITH <span class="code-icon">[<span class="icon-inner">+</span>]</span> & CODE</p>
                 </div>
             </div>
         </div>

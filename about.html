@@ -4,433 +4,568 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - Lazzerex's Blog</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>ABOUT // LAZZEREX</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* About page specific styles */
-        .main-content {
+        /* Page-specific styles */
+        .about-page {
             padding-top: 120px;
             padding-bottom: 80px;
-            min-height: 100vh;
         }
-
-        .about-hero {
-            text-align: center;
-            margin-bottom: 80px;
+        
+        .about-hero-section {
+            padding: 80px 0;
             position: relative;
-            overflow: hidden;
         }
-
-        .about-hero h1 {
-            font-size: clamp(48px, 8vw, 72px);
-            font-weight: 800;
-            margin-bottom: 24px;
-            background: linear-gradient(45deg, #ffffff, #8b5cf6, #06b6d4);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-            animation: fadeInUp 1s ease 0.3s forwards;
+        
+        .about-title-box {
+            border: 6px solid var(--black);
+            padding: 60px;
+            background: var(--accent-yellow);
+            position: relative;
+            margin-bottom: 60px;
         }
-
-        .about-hero p {
-            font-size: 20px;
-            color: #a1a1aa;
-            max-width: 600px;
-            margin: 0 auto;
-            opacity: 0;
-            animation: fadeInUp 1s ease 0.5s forwards;
+        
+        .about-title-box::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border: 3px dashed var(--black);
         }
-
-        .about-content {
+        
+        .about-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(60px, 10vw, 120px);
+            font-weight: 900;
+            line-height: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .about-subtitle {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .content-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: start;
-            margin-bottom: 80px;
+            gap: 40px;
+            margin-bottom: 60px;
         }
-
-        .about-text {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
+        
+        .content-box {
+            border: 4px solid var(--black);
             padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            opacity: 0;
-            animation: slideInLeft 1s ease 0.7s forwards;
+            background: var(--white);
             position: relative;
-            overflow: hidden;
+            transition: all 0.3s ease;
         }
-
-        .about-text::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+        
+        .content-box:hover {
+            transform: translate(-6px, -6px);
+            box-shadow: 10px 10px 0 var(--black);
         }
-
-        .about-text h2 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 24px;
-            color: #ffffff;
+        
+        .content-box-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid var(--black);
         }
-
-        .about-text p {
-            font-size: 18px;
-            color: #a1a1aa;
-            margin-bottom: 24px;
-        }
-
-        .about-text strong {
-            color: #8b5cf6;
-            font-weight: 600;
-        }
-
-        .profile-visual {
+        
+        .content-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--accent-primary);
+            border: 3px solid var(--black);
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            animation: slideInRight 1s ease 0.9s forwards;
-        }
-
-        .profile-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .profile-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .profile-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #06b6d4, #8b5cf6);
-        }
-
-        .avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 48px;
-            font-weight: bold;
-            color: white;
-            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
-        }
-
-        .profile-info h3 {
             font-size: 24px;
+            font-weight: 900;
+            font-family: 'Bebas Neue', sans-serif;
+        }
+        
+        .content-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 8px;
-            color: #ffffff;
         }
-
-        .profile-info p {
-            color: #a1a1aa;
-            margin-bottom: 16px;
+        
+        .content-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 20px;
         }
-
-        .skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 24px;
+        
+        .content-text strong {
+            color: var(--accent-primary);
+            font-weight: 700;
         }
-
-        .skill-tag {
-            background: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            border: 1px solid rgba(139, 92, 246, 0.3);
-        }
-
-        .labs-section {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 20px;
-            padding: 60px 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            text-align: center;
+        
+        .profile-section {
+            border: 6px solid var(--black);
+            padding: 60px;
+            background: var(--accent-cyan);
             position: relative;
-            overflow: hidden;
-            opacity: 0;
-            animation: fadeInUp 1s ease 1.1s forwards;
+            margin-bottom: 60px;
         }
-
-        .labs-section::before {
-            content: '';
+        
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        
+        .avatar-box {
+            position: relative;
+        }
+        
+        .avatar-main {
+            width: 250px;
+            height: 250px;
+            border: 6px solid var(--black);
+            background: var(--accent-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 120px;
+            font-weight: 900;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .avatar-shadow {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #8b5cf6, #06b6d4, #8b5cf6);
+            width: 250px;
+            height: 250px;
+            background: var(--black);
+            top: 15px;
+            left: 15px;
+            z-index: 1;
         }
-
-        .labs-section h2 {
-            font-size: 36px;
+        
+        .profile-info-box {
+            position: relative;
+        }
+        
+        .profile-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 64px;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 15px;
+        }
+        
+        .profile-role {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
             font-weight: 700;
-            margin-bottom: 24px;
-            background: linear-gradient(45deg, #8b5cf6, #06b6d4);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
         }
-
-        .labs-section p {
+        
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .skill-box {
+            border: 3px solid var(--black);
+            padding: 15px 20px;
+            background: var(--white);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .skill-box:hover {
+            background: var(--accent-yellow);
+            transform: translateY(-3px);
+        }
+        
+        .blog-mission-section {
+            border: 6px solid var(--black);
+            padding: 80px 60px;
+            background: var(--accent-secondary);
+            position: relative;
+            text-align: center;
+        }
+        
+        .mission-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        
+        .mission-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(48px, 8vw, 80px);
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 30px;
+        }
+        
+        .mission-text {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 18px;
-            color: #a1a1aa;
+            line-height: 1.7;
             max-width: 800px;
             margin: 0 auto;
         }
-
-        .floating {
-            animation: float 3s ease-in-out infinite;
+        
+        .mission-text strong {
+            font-weight: 900;
         }
-
-        .particles-bg {
+        
+        .decorative-shapes {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
             pointer-events: none;
+            z-index: -1;
         }
-
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        
+        .shape-about {
+            position: absolute;
+            border: 4px solid var(--black);
         }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        
+        .shape-about:nth-child(1) {
+            width: 100px;
+            height: 100px;
+            top: 15%;
+            right: 10%;
+            background: var(--accent-magenta);
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite;
         }
-
+        
+        .shape-about:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            bottom: 20%;
+            left: 8%;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            opacity: 0.3;
+            animation: float 6s ease-in-out infinite reverse;
+        }
+        
         @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+        
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
             }
-            50% {
-                transform: translateY(-10px);
+            
+            .profile-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .avatar-box {
+                display: flex;
+                justify-content: center;
             }
         }
-
+        
         @media (max-width: 768px) {
-            .about-content {
+            .about-title-box,
+            .profile-section,
+            .blog-mission-section {
+                padding: 40px 30px;
+            }
+            
+            .content-box {
+                padding: 30px;
+            }
+            
+            .skills-grid {
                 grid-template-columns: 1fr;
-                gap: 40px;
             }
-
-            .about-text,
-            .profile-card,
-            .labs-section {
-                padding: 24px;
+            
+            .avatar-main {
+                width: 200px;
+                height: 200px;
+                font-size: 100px;
             }
-
-            .about-hero h1 {
-                font-size: 48px;
+            
+            .avatar-shadow {
+                width: 200px;
+                height: 200px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="particles-bg"></div>
-
-    <header>
+    <!-- Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    
+    <!-- Background -->
+    <div class="brutalist-bg">
+        <div class="grid-lines"></div>
+        <div class="floating-shapes">
+            <div class="float-shape"></div>
+            <div class="float-shape"></div>
+            <div class="float-shape"></div>
+        </div>
+    </div>
+    
+    <!-- Decorative Shapes -->
+    <div class="decorative-shapes">
+        <div class="shape-about"></div>
+        <div class="shape-about"></div>
+    </div>
+    
+    <!-- Header -->
+    <header class="brutal-header">
+        <div class="header-border"></div>
         <nav class="container">
-            <a href="index.html" class="logo">Lazzerex's Blog</a>
+            <div class="logo-container">
+                <div class="logo-glitch" data-text="LAZZEREX">LAZZEREX</div>
+                <div class="logo-underline"></div>
+            </div>
             <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="index.html#blog">Blog</a></li>
-                <li><a href="about.html" class="active">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
+                <li><a href="index.html" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">HOME</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="index.html#blog" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">BLOG</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="about.html" class="nav-link active">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">ABOUT</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
+                <li><a href="contact.html" class="nav-link">
+                    <span class="link-bracket">[</span>
+                    <span class="link-text">CONTACT</span>
+                    <span class="link-bracket">]</span>
+                </a></li>
             </ul>
+            <div class="menu-burger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </nav>
+        <div class="header-border bottom"></div>
     </header>
-
-    <main class="main-content">
+    
+    <!-- Main Content -->
+    <main class="about-page">
         <div class="container">
-            <section class="about-hero">
-                <h1>About Me</h1>
-                <p>Bridging the gap between classic experiences and modern innovation</p>
-            </section>
-
-            <div class="about-content">
-                <div class="about-text">
-                    <h2>My Journey</h2>
-                    <p>I'm currently a <strong>university student</strong> whose dream is to become someone <strong>that I can be proud of</strong> in the future :D.</p>
-
-                    <p>My passion lies in the intersection of <strong>technology, science, gaming, and music</strong>. I believe that these fields not only shape our world but also enhance our understanding of it.</p>
-
-                    <p>About my hobbies, I enjoy exploring new technologies, playing video games, and vibing to music. My favorite music group is Sakurazaka46. These activities not only provide me with joy but also inspire my work in the tech industry.</p>
+            <!-- Hero Section -->
+            <section class="about-hero-section">
+                <div class="about-title-box scroll-animate">
+                    <h1 class="about-title">ABOUT<br>ME</h1>
+                    <p class="about-subtitle">// BRIDGING THE GAP BETWEEN CLASSIC EXPERIENCES & MODERN INNOVATION</p>
                 </div>
-
-                <div class="profile-visual">
-                    <div class="profile-card floating">
-                        <div class="avatar">L</div>
-                        <div class="profile-info">
-                            <h3>Lazzerex</h3>
-                            <p>Technology Enthusiast & Student</p>
-                            <div class="skills">
-                                <span class="skill-tag">Technology</span>
-                                <span class="skill-tag">Science</span>
-                                <span class="skill-tag">Gaming</span>
-                                <span class="skill-tag">Music</span>
-                            </div>
+            </section>
+            
+            <!-- Journey & Passion -->
+            <div class="content-grid">
+                <div class="content-box scroll-animate">
+                    <div class="content-box-header">
+                        <div class="content-icon">01</div>
+                        <h2 class="content-title">MY JOURNEY</h2>
+                    </div>
+                    <p class="content-text">
+                        I'm currently a <strong>university student</strong> whose dream is to become someone 
+                        <strong>that I can be proud of</strong> in the future :D.
+                    </p>
+                    <p class="content-text">
+                        My passion lies in the intersection of <strong>technology, science, gaming, and music</strong>. 
+                        I believe that these fields not only shape our world but also enhance our understanding of it.
+                    </p>
+                </div>
+                
+                <div class="content-box scroll-animate">
+                    <div class="content-box-header">
+                        <div class="content-icon">02</div>
+                        <h2 class="content-title">MY HOBBIES</h2>
+                    </div>
+                    <p class="content-text">
+                        About my hobbies, I enjoy <strong>exploring new technologies</strong>, playing video games, 
+                        and vibing to music. My favorite music group is <strong>Sakurazaka46</strong>.
+                    </p>
+                    <p class="content-text">
+                        These activities not only provide me with joy but also inspire my work in the tech industry.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Profile Card -->
+            <section class="profile-section scroll-animate">
+                <div class="profile-grid">
+                    <div class="avatar-box">
+                        <div class="avatar-shadow"></div>
+                        <div class="avatar-main">L</div>
+                    </div>
+                    
+                    <div class="profile-info-box">
+                        <h2 class="profile-name">LAZZEREX</h2>
+                        <p class="profile-role">TECHNOLOGY ENTHUSIAST & STUDENT</p>
+                        
+                        <div class="skills-grid">
+                            <div class="skill-box">TECHNOLOGY</div>
+                            <div class="skill-box">SCIENCE</div>
+                            <div class="skill-box">GAMING</div>
+                            <div class="skill-box">MUSIC</div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <section class="labs-section">
-                <h2>About This Blog</h2>
-                <p>At <strong>Lazzerex's Blog</strong>, I explore the fields of technology, science, music,
-                    and gaming — blending innovation with imagination. This blog is where I will share things that I've learned, things that I adore, as well as my personal insights.
+            </section>
+            
+            <!-- Blog Mission -->
+            <section class="blog-mission-section scroll-animate">
+                <div class="mission-label">[ MISSION STATEMENT ]</div>
+                <h2 class="mission-title">ABOUT THIS BLOG</h2>
+                <p class="mission-text">
+                    At <strong>LAZZEREX'S BLOG</strong>, I explore the fields of technology, science, music, 
+                    and gaming, blending innovation with imagination. This blog is where I will share things 
+                    that I've learned, things that I adore, as well as my personal insights.
                 </p>
             </section>
         </div>
     </main>
-
-    <script>
-        // Three.js background animation
-        let scene, camera, renderer, particles;
-
-        function initThree() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.domElement.style.position = 'fixed';
-            renderer.domElement.style.top = '0';
-            renderer.domElement.style.left = '0';
-            renderer.domElement.style.zIndex = '-1';
-            renderer.domElement.style.pointerEvents = 'none';
-            document.querySelector('.particles-bg').appendChild(renderer.domElement);
-
-            // Create particles
-            const geometry = new THREE.BufferGeometry();
-            const particleCount = 80;
-            const positions = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-
-            for (let i = 0; i < particleCount * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 20;
-                positions[i + 1] = (Math.random() - 0.5) * 20;
-                positions[i + 2] = (Math.random() - 0.5) * 20;
-
-                colors[i] = Math.random() * 0.5 + 0.5;
-                colors[i + 1] = Math.random() * 0.3 + 0.7;
-                colors[i + 2] = 1;
-            }
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-            const material = new THREE.PointsMaterial({
-                size: 0.018,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.7
-            });
-
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
-
-            camera.position.z = 5;
-        }
-
-        function animateThree() {
-            requestAnimationFrame(animateThree);
+    
+    <!-- Footer -->
+    <footer class="brutal-footer">
+        <div class="footer-pattern"></div>
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-logo-section">
+                    <div class="footer-logo-text">LAZZEREX</div>
+                    <div class="footer-tagline">
+                        <span class="tagline-bracket">[</span>
+                        <span>BUILDING · LEARNING · SHARING</span>
+                        <span class="tagline-bracket">]</span>
+                    </div>
+                </div>
+                
+                <div class="footer-links-group">
+                    <div class="footer-column">
+                        <h3 class="footer-heading">NAVIGATE</h3>
+                        <ul class="footer-list">
+                            <li><a href="index.html">→ HOME</a></li>
+                            <li><a href="index.html#blog">→ BLOG</a></li>
+                            <li><a href="about.html">→ ABOUT</a></li>
+                            <li><a href="contact.html">→ CONTACT</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-column">
+                        <h3 class="footer-heading">CONNECT</h3>
+                        <ul class="footer-list">
+                            <li><a href="https://github.com/lazzerex" target="_blank">→ GITHUB</a></li>
+                            <li><a href="index.html#blog">→ LATEST</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             
-            if (particles) {
-                particles.rotation.x += 0.0004;
-                particles.rotation.y += 0.0008;
-            }
-
-            renderer.render(scene, camera);
+            <div class="footer-bottom">
+                <div class="footer-divider"></div>
+                <div class="footer-info">
+                    <p class="copyright"><span class="copyright-symbol">©</span> 2026 LAZZEREX <span class="footer-separator">|</span> ALL RIGHTS RESERVED</p>
+                    <p class="built-with">BUILT WITH <span class="code-icon">[<span class="icon-inner">+</span>]</span> & CODE</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Custom Cursor
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+        
+        let mouseX = 0, mouseY = 0;
+        let outlineX = 0, outlineY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        });
+        
+        function animateCursor() {
+            const distX = mouseX - outlineX;
+            const distY = mouseY - outlineY;
+            
+            outlineX += distX * 0.15;
+            outlineY += distY * 0.15;
+            
+            cursorOutline.style.left = outlineX + 'px';
+            cursorOutline.style.top = outlineY + 'px';
+            
+            requestAnimationFrame(animateCursor);
         }
-
-        // Initialize everything
-        document.addEventListener('DOMContentLoaded', function() {
-            initThree();
-            animateThree();
-
-            // Smooth scrolling for navigation links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth'
-                        });
-                    }
-                });
+        animateCursor();
+        
+        // Cursor interactions
+        const elements = document.querySelectorAll('a, button, .content-box, .skill-box');
+        elements.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursorDot.style.transform = 'scale(2)';
+                cursorOutline.style.transform = 'scale(1.5)';
             });
-
-            // Add hover effects
-            document.querySelectorAll('.about-text, .profile-card, .labs-section').forEach(element => {
-                element.addEventListener('mouseenter', function () {
-                    this.style.transform = 'translateY(-5px)';
-                    this.style.boxShadow = '0 20px 60px rgba(139, 92, 246, 0.2)';
-                });
-
-                element.addEventListener('mouseleave', function () {
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = 'none';
-                });
+            
+            el.addEventListener('mouseleave', () => {
+                cursorDot.style.transform = 'scale(1)';
+                cursorOutline.style.transform = 'scale(1)';
             });
         });
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
+        
+        // Scroll Animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
     </script>
 </body>
 

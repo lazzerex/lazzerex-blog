@@ -1,244 +1,320 @@
-// Pagination variables
+/* ============================================
+   BRUTALIST BLOG - DYNAMIC INTERACTIONS
+   ============================================ */
+
+// ==================== PAGINATION VARIABLES ====================
 let currentPage = 1;
-const postsPerPage = 4;
-let totalPages = 1; // Will be calculated after blog data loads
+const postsPerPage = 6;
+let totalPages = 1;
+let currentFilter = 'all';
 
-// Three.js background animation
-let scene, camera, renderer, particles;
+// ==================== PERFORMANCE FLAGS ====================
+let isInitialized = false;
+let scrollObserver = null;
 
-function initThree() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ 
-        alpha: true,
-        antialias: true,
-        premultipliedAlpha: false // Helps prevent white flash
-    });
-    
-    // Set clear color to match your background
-    renderer.setClearColor(0x0f0f0f, 0); // Dark background, fully transparent
-    
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.domElement.style.position = 'fixed';
-    renderer.domElement.style.top = '0';
-    renderer.domElement.style.left = '0';
-    renderer.domElement.style.zIndex = '-1';
-    renderer.domElement.style.pointerEvents = 'none';
-    
-    // Start with canvas hidden
-    renderer.domElement.style.opacity = '0';
-    
-    document.querySelector('.hero-bg').appendChild(renderer.domElement);
-
-    // Create particles
-    const geometry = new THREE.BufferGeometry();
-    const particleCount = 10000;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-
-    for (let i = 0; i < particleCount * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 20;
-        positions[i + 1] = (Math.random() - 0.5) * 20;
-        positions[i + 2] = (Math.random() - 0.5) * 20;
-
-        colors[i] = Math.random() * 0.5 + 0.5;
-        colors[i + 1] = Math.random() * 0.3 + 0.7;
-        colors[i + 2] = 1;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-        size: 0.02,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.8
-    });
-
-    particles = new THREE.Points(geometry, material);
-    scene.add(particles);
-
-    camera.position.z = 5;
-    
-    // Fade in canvas after a short delay
-    setTimeout(() => {
-        renderer.domElement.style.transition = 'opacity 0.5s ease-in-out';
-        renderer.domElement.style.opacity = '1';
-        renderer.domElement.classList.add('ready');
-    }, 100);
+// ==================== DEBOUNCE UTILITY ====================
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
-function animateThree() {
-    requestAnimationFrame(animateThree);
+// ==================== CUSTOM CURSOR ====================
+function initCustomCursor() {
+    if (window.matchMedia('(pointer: coarse)').matches) return; // Skip on touch devices
     
-    if (particles) {
-        particles.rotation.x += 0.0005;
-        particles.rotation.y += 0.001;
+    const cursorDot = document.querySelector('.cursor-dot');
+    const cursorOutline = document.querySelector('.cursor-outline');
+    
+    if (!cursorDot || !cursorOutline) return;
+    
+    let mouseX = 0;
+    let mouseY = 0;
+    let outlineX = 0;
+    let outlineY = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        cursorDot.style.left = mouseX + 'px';
+        cursorDot.style.top = mouseY + 'px';
+    }, { passive: true });
+    
+    // Smooth follow for outline
+    function animateCursor() {
+        const distX = mouseX - outlineX;
+        const distY = mouseY - outlineY;
+        
+        outlineX += distX * 0.15;
+        outlineY += distY * 0.15;
+        
+        cursorOutline.style.left = outlineX + 'px';
+        cursorOutline.style.top = outlineY + 'px';
+        
+        requestAnimationFrame(animateCursor);
     }
-
-    renderer.render(scene, camera);
+    animateCursor();
+    
+    // Event delegation for cursor interactions
+    document.body.addEventListener('mouseenter', (e) => {
+        if (e.target.matches('a, button, .blog-card, .brutal-filter, .page-number')) {
+            cursorDot.style.transform = 'scale(2)';
+            cursorOutline.style.transform = 'scale(1.5)';
+        }
+    }, true);
+    
+    document.body.addEventListener('mouseleave', (e) => {
+        if (e.target.matches('a, button, .blog-card, .brutal-filter, .page-number')) {
+            cursorDot.style.transform = 'scale(1)';
+            cursorOutline.style.transform = 'scale(1)';
+        }
+    }, true);
 }
 
-// Pagination functions
-function displayPosts() {
-    // Check if blogPosts is available (from blog.js)
-    if (typeof blogPosts === 'undefined') {
-        console.error('Blog posts data not loaded. Make sure blog.js is included before script.js');
+// ==================== SCROLL ANIMATIONS ====================
+function initScrollAnimations() {
+    if (scrollObserver) {
+        // Observe new elements only
+        const newElements = document.querySelectorAll('.scroll-animate:not(.observed)');
+        newElements.forEach(el => {
+            el.classList.add('observed');
+            scrollObserver.observe(el);
+        });
         return;
     }
+    
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    scrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+                scrollObserver.unobserve(entry.target); // Stop observing once shown
+            }
+        });
+    }, observerOptions);
+    
+    const animateElements = document.querySelectorAll('.scroll-animate');
+    animateElements.forEach(el => {
+        el.classList.add('observed');
+        scrollObserver.observe(el);
+    });
+}
 
-    const blogGrid = document.getElementById('blogGrid');
+// ==================== HEADER SCROLL EFFECT ====================
+function initHeaderScroll() {
+    const header = document.querySelector('.brutal-header');
+    let lastScroll = 0;
+    let ticking = false;
+    
+    const updateHeader = () => {
+        const currentScroll = window.pageYOffset;
+        
+        if (currentScroll > 100) {
+            header.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+        } else {
+            header.style.boxShadow = 'none';
+        }
+        
+        lastScroll = currentScroll;
+        ticking = false;
+    };
+    
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(updateHeader);
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
+// ==================== BLOG DISPLAY & FILTERING ====================
+function displayPosts(filter = 'all') {
+    if (typeof blogPosts === 'undefined') {
+        console.error('Blog posts data not loaded');
+        return;
+    }
+    
+    currentFilter = filter;
+    
+    // Filter posts
+    let filteredPosts = blogPosts;
+    if (filter !== 'all') {
+        filteredPosts = blogPosts.filter(post => 
+            post.tag.toLowerCase().includes(filter.toLowerCase())
+        );
+    }
+    
+    // Calculate pagination
+    totalPages = Math.ceil(filteredPosts.length / postsPerPage);
     const startIndex = (currentPage - 1) * postsPerPage;
     const endIndex = startIndex + postsPerPage;
-    const postsToShow = blogPosts.slice(startIndex, endIndex);
-
-    blogGrid.innerHTML = '';
-
-    postsToShow.forEach(post => {
-        const blogCard = document.createElement('article');
-        blogCard.className = 'blog-card scroll-animate';
+    const postsToShow = filteredPosts.slice(startIndex, endIndex);
+    
+    const blogGrid = document.getElementById('blogGrid');
+    
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+    
+    postsToShow.forEach((post, index) => {
+        const card = document.createElement('article');
+        card.className = 'blog-card scroll-animate';
+        card.style.animationDelay = `${index * 0.1}s`;
         
-        // Create thumbnail HTML if thumbnail exists
-        const thumbnailHTML = post.thumbnail ? 
-            `<div class="blog-thumbnail">
-                <img src="${post.thumbnail}" alt="${post.title}" loading="lazy">
-            </div>` : '';
-
-        blogCard.innerHTML = `
-            ${thumbnailHTML}
-            <div class="blog-content">
-                <div class="blog-meta">
-                    <span class="blog-date">${post.date}</span>
-                    <span class="blog-tag">${post.tag}</span>
-                </div>
-                <h3>${post.title}</h3>
-                <p class="blog-summary">${post.summary}</p>
-                <a href="${post.link}" target="_blank" class="read-more">Read Full Blog</a>
-            </div>
+        // Create elements instead of innerHTML for better performance
+        const imageWrapper = document.createElement('div');
+        imageWrapper.className = 'card-image-wrapper';
+        
+        const img = document.createElement('img');
+        img.src = post.thumbnail;
+        img.alt = post.title;
+        img.className = 'card-image';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        
+        const tag = document.createElement('div');
+        tag.className = 'card-tag';
+        tag.textContent = post.tag.split(',')[0].trim();
+        
+        imageWrapper.appendChild(img);
+        imageWrapper.appendChild(tag);
+        
+        const content = document.createElement('div');
+        content.className = 'card-content';
+        content.innerHTML = `
+            <div class="card-date">${post.date}</div>
+            <h3 class="card-title">${post.title}</h3>
+            <p class="card-summary">${truncateText(post.summary, 120)}</p>
+            <a href="${post.link}" target="_blank" rel="noopener noreferrer" class="card-link">
+                <span>READ MORE</span>
+                <span class="card-arrow">→</span>
+            </a>
         `;
-        blogGrid.appendChild(blogCard);
+        
+        card.appendChild(imageWrapper);
+        card.appendChild(content);
+        fragment.appendChild(card);
     });
-
-    // Trigger scroll animation for new posts
-    setTimeout(() => {
-        handleScroll();
-        // RE-INITIALIZE HOVER EFFECTS FOR NEW CARDS
-        initCardEffects();
-    }, 100);
+    
+    // Clear and append all at once
+    blogGrid.innerHTML = '';
+    blogGrid.appendChild(fragment);
+    
+    // Initialize animations for new elements
+    requestAnimationFrame(() => {
+        initScrollAnimations();
+    });
+    
+    updatePagination(filteredPosts.length);
 }
 
-function updatePagination() {
-    // Check if blogPosts is available
-    if (typeof blogPosts === 'undefined') {
-        return;
-    }
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substr(0, maxLength) + '...';
+}
 
-    // Recalculate total pages in case blog data changed
-    totalPages = Math.ceil(blogPosts.length / postsPerPage);
-
+// ==================== PAGINATION ====================
+function updatePagination(totalPosts) {
     const pageNumbers = document.getElementById('pageNumbers');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const pageInfo = document.getElementById('pageInfo');
-
-    // Clear existing page numbers
+    
+    if (!pageNumbers) return;
+    
     pageNumbers.innerHTML = '';
-
-    // Create page number buttons
-    for (let i = 1; i <= totalPages; i++) {
+    
+    // Show page numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
         const pageBtn = document.createElement('button');
         pageBtn.textContent = i;
-        pageBtn.className = i === currentPage ? 'active' : '';
+        pageBtn.className = i === currentPage ? 'page-number active' : 'page-number';
         pageBtn.onclick = () => goToPage(i);
         pageNumbers.appendChild(pageBtn);
     }
-
-    // Update navigation buttons
-    prevBtn.disabled = currentPage === 1;
-    nextBtn.disabled = currentPage === totalPages;
-
-    // Update page info
-    const startPost = (currentPage - 1) * postsPerPage + 1;
-    const endPost = Math.min(currentPage * postsPerPage, blogPosts.length);
-    pageInfo.textContent = `Showing ${startPost}-${endPost} of ${blogPosts.length} posts`;
+    
+    // Update buttons
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+    
+    // Update info
+    if (pageInfo) {
+        const startPost = (currentPage - 1) * postsPerPage + 1;
+        const endPost = Math.min(currentPage * postsPerPage, totalPosts);
+        pageInfo.textContent = `SHOWING ${startPost}-${endPost} OF ${totalPosts}`;
+    }
 }
 
 function changePage(direction) {
     const newPage = currentPage + direction;
     if (newPage >= 1 && newPage <= totalPages) {
         currentPage = newPage;
-        displayPosts();
-        updatePagination();
-        
-        // Smooth scroll to blog section
-        document.getElementById('blog').scrollIntoView({
+        displayPosts(currentFilter);
+        scrollToBlog();
+    }
+}
+
+function goToPage(pageNumber) {
+    currentPage = pageNumber;
+    displayPosts(currentFilter);
+    scrollToBlog();
+}
+
+function scrollToBlog() {
+    const blogSection = document.getElementById('blog');
+    if (blogSection) {
+        blogSection.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
         });
     }
 }
 
-function goToPage(pageNumber) {
-    currentPage = pageNumber;
-    displayPosts();
-    updatePagination();
+// ==================== FILTER SYSTEM ====================
+function initFilterSystem() {
+    const filterButtons = document.querySelectorAll('.brutal-filter');
     
-    // Smooth scroll to blog section
-    document.getElementById('blog').scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active state
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Get filter value
+            const filter = button.getAttribute('data-filter');
+            currentPage = 1; // Reset to page 1
+            displayPosts(filter);
+        });
     });
 }
 
-// Blog filtering functions (using BlogData helper)
-function filterByTag(tag) {
-    if (typeof BlogData !== 'undefined') {
-        const filteredPosts = BlogData.getPostsByTag(tag);
-        // You can implement custom filtering UI here
-        console.log(`Posts tagged with "${tag}":`, filteredPosts);
-    }
-}
-
-function searchPosts(query) {
-    if (typeof BlogData !== 'undefined') {
-        const searchResults = BlogData.searchPosts(query);
-        // You can implement search results UI here
-        console.log(`Search results for "${query}":`, searchResults);
-    }
-}
-
-// Scroll animations
-function handleScroll() {
-    const elements = document.querySelectorAll('.scroll-animate');
-    elements.forEach(element => {
-        const elementTop = element.getBoundingClientRect().top;
-        const elementVisible = 150;
-        
-        if (elementTop < window.innerHeight - elementVisible) {
-            element.classList.add('visible');
-        }
-    });
-}
-
-// Header background on scroll
-function handleHeaderScroll() {
-    const header = document.querySelector('header');
-    if (window.scrollY > 100) {
-        header.style.background = 'rgba(15, 15, 15, 0.95)';
-    } else {
-        header.style.background = 'rgba(15, 15, 15, 0.8)';
-    }
-}
-
-// Smooth scrolling for navigation links
-function smoothScroll() {
+// ==================== SMOOTH SCROLL ====================
+function initSmoothScroll() {
     const links = document.querySelectorAll('a[href^="#"]');
+    
     links.forEach(link => {
         link.addEventListener('click', function(e) {
-            e.preventDefault();
             const target = document.querySelector(this.getAttribute('href'));
             if (target) {
+                e.preventDefault();
                 target.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
@@ -248,66 +324,136 @@ function smoothScroll() {
     });
 }
 
-// Parallax effect for hero section
-function handleParallax() {
-    const scrolled = window.pageYOffset;
-    const hero = document.querySelector('.hero-content');
-    if (hero) {
-        hero.style.transform = `translateY(${scrolled * 0.5}px)`;
-    }
-}
-
-// Card hover effects
-function initCardEffects() {
-    const cards = document.querySelectorAll('.blog-card');
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-8px) scale(1.02)';
+// ==================== NAV ACTIVE STATE ====================
+function initNavActive() {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    function updateActiveNav() {
+        let current = '';
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            
+            if (window.pageYOffset >= sectionTop - 200) {
+                current = section.getAttribute('id');
+            }
         });
         
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0) scale(1)';
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${current}`) {
+                link.classList.add('active');
+            }
         });
+    }
+    
+    window.addEventListener('scroll', updateActiveNav);
+    updateActiveNav();
+}
+
+// ==================== ANIMATE STATS ====================
+function animateStats() {
+    const postCount = document.getElementById('postCount');
+    if (!postCount || typeof blogPosts === 'undefined') return;
+    
+    const target = blogPosts.length;
+    let current = 0;
+    const increment = target / 50;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            postCount.textContent = target;
+            clearInterval(timer);
+        } else {
+            postCount.textContent = Math.floor(current);
+        }
+    }, 30);
+}
+
+// ==================== HERO WORD ANIMATIONS ====================
+function initHeroAnimations() {
+    const words = document.querySelectorAll('.word');
+    
+    words.forEach((word, index) => {
+        word.style.setProperty('--word-index', index);
     });
 }
 
-// Initialize everything
+// ==================== MOBILE MENU ====================
+function initMobileMenu() {
+    const burger = document.querySelector('.menu-burger');
+    const navLinks = document.querySelector('.nav-links');
+    
+    if (burger && navLinks) {
+        burger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            burger.classList.toggle('active');
+        });
+    }
+}
+
+// ==================== PARALLAX ELEMENTS ====================
+function initParallax() {
+    // Disabled for performance - CSS animations are sufficient
+    return;
+}
+
+// ==================== LOADING ANIMATION ====================
+function initPageLoad() {
+    document.body.classList.add('loading');
+    
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.body.classList.remove('loading');
+            document.body.classList.add('loaded');
+        }, 300);
+    });
+}
+
+// ==================== INITIALIZE ALL ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Calculate total pages once blog data is available
+    console.log('🎨 Initializing Brutalist Blog...');
+    
+    // Initialize core features
+    initPageLoad();
+    initCustomCursor();
+    initScrollAnimations();
+    initHeaderScroll();
+    initSmoothScroll();
+    initNavActive();
+    initFilterSystem();
+    initHeroAnimations();
+    initMobileMenu();
+    initParallax();
+    
+    // Initialize blog data
     if (typeof blogPosts !== 'undefined') {
         totalPages = Math.ceil(blogPosts.length / postsPerPage);
+        displayPosts('all');
+        animateStats();
+        console.log(`✅ Loaded ${blogPosts.length} posts`);
+    } else {
+        console.warn('⚠️ Blog posts not loaded');
     }
-
-    initThree();
-    animateThree();
-    smoothScroll();
-    handleScroll(); // Initial check
     
-    // Initialize pagination
-    displayPosts();
-    updatePagination();
-    
-    // Re-initialize card effects after posts are loaded
-    setTimeout(() => {
-        initCardEffects();
-    }, 200);
-    
-    window.addEventListener('scroll', function() {
-        handleScroll();
-        handleHeaderScroll();
-        handleParallax();
-    });
-    
-    window.addEventListener('resize', function() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    console.log('✨ Blog initialized successfully!');
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Ensure body is visible after everything loads
-    setTimeout(() => {
-        document.body.style.opacity = '1';
-    }, 50);
+// ==================== WINDOW RESIZE ====================
+window.addEventListener('resize', debounce(() => {
+    if (currentFilter) {
+        displayPosts(currentFilter);
+    }
+}, 250));
+
+// ==================== KEYBOARD NAVIGATION ====================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && currentPage > 1) {
+        changePage(-1);
+    } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+        changePage(1);
+    }
 });
