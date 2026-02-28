@@ -11,6 +11,8 @@ let currentFilter = 'all';
 // ==================== PERFORMANCE FLAGS ====================
 let isInitialized = false;
 let scrollObserver = null;
+let cachedFilteredPosts = null;
+let lastFilter = null;
 
 // ==================== DEBOUNCE UTILITY ====================
 function debounce(func, wait) {
@@ -22,6 +24,18 @@ function debounce(func, wait) {
         };
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
+    };
+}
+
+// ==================== THROTTLE UTILITY ====================
+function throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
     };
 }
 
@@ -172,12 +186,20 @@ function displayPosts(filter = 'all') {
     
     currentFilter = filter;
     
-    // Filter posts
-    let filteredPosts = blogPosts;
-    if (filter !== 'all') {
-        filteredPosts = blogPosts.filter(post => 
-            post.tag.toLowerCase().includes(filter.toLowerCase())
-        );
+    // Use cached filtered posts if filter hasn't changed
+    let filteredPosts;
+    if (filter === lastFilter && cachedFilteredPosts) {
+        filteredPosts = cachedFilteredPosts;
+    } else {
+        if (filter !== 'all') {
+            filteredPosts = blogPosts.filter(post => 
+                post.tag.toLowerCase().includes(filter.toLowerCase())
+            );
+        } else {
+            filteredPosts = blogPosts;
+        }
+        cachedFilteredPosts = filteredPosts;
+        lastFilter = filter;
     }
     
     // Calculate pagination
@@ -187,47 +209,13 @@ function displayPosts(filter = 'all') {
     const postsToShow = filteredPosts.slice(startIndex, endIndex);
     
     const blogGrid = document.getElementById('blogGrid');
+    if (!blogGrid) return;
     
     // Use DocumentFragment for better performance
     const fragment = document.createDocumentFragment();
     
     postsToShow.forEach((post, index) => {
-        const card = document.createElement('article');
-        card.className = 'blog-card scroll-animate';
-        card.style.animationDelay = `${index * 0.1}s`;
-        
-        // Create elements instead of innerHTML for better performance
-        const imageWrapper = document.createElement('div');
-        imageWrapper.className = 'card-image-wrapper';
-        
-        const img = document.createElement('img');
-        img.src = post.thumbnail;
-        img.alt = post.title;
-        img.className = 'card-image';
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        
-        const tag = document.createElement('div');
-        tag.className = 'card-tag';
-        tag.textContent = post.tag.split(',')[0].trim();
-        
-        imageWrapper.appendChild(img);
-        imageWrapper.appendChild(tag);
-        
-        const content = document.createElement('div');
-        content.className = 'card-content';
-        content.innerHTML = `
-            <div class="card-date">${post.date}</div>
-            <h3 class="card-title">${post.title}</h3>
-            <p class="card-summary">${truncateText(post.summary, 120)}</p>
-            <a href="${post.link}" target="_blank" rel="noopener noreferrer" class="card-link">
-                <span>READ MORE</span>
-                <span class="card-arrow">→</span>
-            </a>
-        `;
-        
-        card.appendChild(imageWrapper);
-        card.appendChild(content);
+        const card = createBlogCard(post, index);
         fragment.appendChild(card);
     });
     
@@ -235,12 +223,72 @@ function displayPosts(filter = 'all') {
     blogGrid.innerHTML = '';
     blogGrid.appendChild(fragment);
     
-    // Initialize animations for new elements
+    // Initialize animations for new elements after paint
     requestAnimationFrame(() => {
-        initScrollAnimations();
+        requestAnimationFrame(() => {
+            initScrollAnimations();
+        });
     });
     
     updatePagination(filteredPosts.length);
+}
+
+// ==================== BLOG CARD CREATION ====================
+function createBlogCard(post, index) {
+    const card = document.createElement('article');
+    card.className = 'blog-card scroll-animate';
+    card.style.animationDelay = `${index * 0.05}s`;
+    
+    const imageWrapper = document.createElement('div');
+    imageWrapper.className = 'card-image-wrapper';
+    
+    const img = document.createElement('img');
+    img.src = post.thumbnail || 'images/placeholder.jpg';
+    img.alt = post.title;
+    img.className = 'card-image';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    // Add placeholder background while loading
+    img.style.backgroundColor = '#1a1a1a';
+    
+    const tag = document.createElement('div');
+    tag.className = 'card-tag';
+    tag.textContent = post.tag.split(',')[0].trim();
+    
+    imageWrapper.appendChild(img);
+    imageWrapper.appendChild(tag);
+    
+    const content = document.createElement('div');
+    content.className = 'card-content';
+    
+    const date = document.createElement('div');
+    date.className = 'card-date';
+    date.textContent = post.date;
+    
+    const title = document.createElement('h3');
+    title.className = 'card-title';
+    title.textContent = post.title;
+    
+    const summary = document.createElement('p');
+    summary.className = 'card-summary';
+    summary.textContent = truncateText(post.summary, 120);
+    
+    const link = document.createElement('a');
+    link.href = post.link;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'card-link';
+    link.innerHTML = '<span>READ MORE</span><span class="card-arrow">→</span>';
+    
+    content.appendChild(date);
+    content.appendChild(title);
+    content.appendChild(summary);
+    content.appendChild(link);
+    
+    card.appendChild(imageWrapper);
+    card.appendChild(content);
+    
+    return card;
 }
 
 function truncateText(text, maxLength) {
@@ -326,6 +374,11 @@ function initFilterSystem() {
             // Get filter value
             const filter = button.getAttribute('data-filter');
             currentPage = 1; // Reset to page 1
+            
+            // Clear cache when filter changes
+            cachedFilteredPosts = null;
+            lastFilter = null;
+            
             displayPosts(filter);
         });
     });
@@ -354,12 +407,11 @@ function initNavActive() {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
     
-    function updateActiveNav() {
+    const updateActiveNav = throttle(() => {
         let current = '';
         
         sections.forEach(section => {
             const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
             
             if (window.pageYOffset >= sectionTop - 200) {
                 current = section.getAttribute('id');
@@ -372,9 +424,9 @@ function initNavActive() {
                 link.classList.add('active');
             }
         });
-    }
+    }, 100);
     
-    window.addEventListener('scroll', updateActiveNav);
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
     updateActiveNav();
 }
 
