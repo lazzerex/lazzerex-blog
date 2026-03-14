@@ -1,6 +1,15 @@
 // Blog posts data
 const blogPosts = [
 
+     {
+        date: "March 15, 2026",
+        tag: "Manga",
+        title: "The Girl From The Other Side",
+        summary: "An exploration of folklore, memory, and separation in The Girl from the Other Side: Siúil, a Rún, and how its quiet storytelling and themes turn a simple premise into something timeless. ",
+        link: "https://lazzerex.notion.site/The-Girl-From-The-Other-Side-00b3fbb9906a82e58f700173793e9843",
+        thumbnail: "images/thegirlfromtheotherside.jpg"
+    },
+
     {
         date: "February 26, 2026",
         tag: "Linux, Cyber Security",
