@@ -566,16 +566,32 @@
     </footer>
     
     <script>
+        function getStoredThemeSafe() {
+            try {
+                return localStorage.getItem('theme') || 'light';
+            } catch (error) {
+                return 'light';
+            }
+        }
+
+        function setStoredThemeSafe(theme) {
+            try {
+                localStorage.setItem('theme', theme);
+            } catch (error) {
+                // Ignore storage write failures in strict/private environments.
+            }
+        }
+
         // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
-        const currentTheme = localStorage.getItem('theme') || 'light';
+        const currentTheme = getStoredThemeSafe();
         document.documentElement.setAttribute('data-theme', currentTheme);
         
         themeToggle.addEventListener('click', () => {
             const theme = document.documentElement.getAttribute('data-theme');
             const newTheme = theme === 'light' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
+            setStoredThemeSafe(newTheme);
             
             themeToggle.style.transform = 'rotate(360deg)';
             setTimeout(() => {
@@ -658,20 +674,26 @@
         });
         
         // Scroll Animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('show');
-                }
-            });
-        }, observerOptions);
-        
-        document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
+        const scrollAnimatedElements = document.querySelectorAll('.scroll-animate');
+
+        if ('IntersectionObserver' in window) {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -100px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('show');
+                    }
+                });
+            }, observerOptions);
+
+            scrollAnimatedElements.forEach(el => observer.observe(el));
+        } else {
+            scrollAnimatedElements.forEach(el => el.classList.add('show'));
+        }
     </script>
 </body>
 

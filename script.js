@@ -14,6 +14,30 @@ let scrollObserver = null;
 let cachedFilteredPosts = null;
 let lastFilter = null;
 
+function getStoredTheme() {
+    try {
+        return localStorage.getItem('theme') || 'light';
+    } catch (error) {
+        console.warn('Theme storage unavailable, using light mode by default.');
+        return 'light';
+    }
+}
+
+function saveTheme(theme) {
+    try {
+        localStorage.setItem('theme', theme);
+    } catch (error) {
+        console.warn('Theme preference could not be saved.');
+    }
+}
+
+function revealAllScrollAnimations(elements) {
+    elements.forEach(el => {
+        el.classList.add('observed');
+        el.classList.add('show');
+    });
+}
+
 // ==================== DEBOUNCE UTILITY ====================
 function debounce(func, wait) {
     let timeout;
@@ -45,7 +69,7 @@ function initThemeToggle() {
     if (!themeToggle) return;
     
     // Check for saved theme preference or default to 'light'
-    const currentTheme = localStorage.getItem('theme') || 'light';
+    const currentTheme = getStoredTheme();
     document.documentElement.setAttribute('data-theme', currentTheme);
     
     // Toggle theme
@@ -54,7 +78,7 @@ function initThemeToggle() {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         
         document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        saveTheme(newTheme);
         
         // Add animation effect
         themeToggle.style.transform = 'rotate(360deg)';
@@ -66,7 +90,7 @@ function initThemeToggle() {
 
 // ==================== CUSTOM CURSOR ====================
 function initCustomCursor() {
-    if (window.matchMedia('(pointer: coarse)').matches) return; // Skip on touch devices
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return; // Skip on touch devices
     
     const cursorDot = document.querySelector('.cursor-dot');
     const cursorOutline = document.querySelector('.cursor-outline');
@@ -119,6 +143,13 @@ function initCustomCursor() {
 
 // ==================== SCROLL ANIMATIONS ====================
 function initScrollAnimations() {
+    const animateElements = document.querySelectorAll('.scroll-animate');
+
+    if (!('IntersectionObserver' in window)) {
+        revealAllScrollAnimations(animateElements);
+        return;
+    }
+
     if (scrollObserver) {
         // Observe new elements only
         const newElements = document.querySelectorAll('.scroll-animate:not(.observed)');
@@ -134,16 +165,20 @@ function initScrollAnimations() {
         rootMargin: '0px 0px -50px 0px'
     };
     
-    scrollObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('show');
-                scrollObserver.unobserve(entry.target); // Stop observing once shown
-            }
-        });
-    }, observerOptions);
-    
-    const animateElements = document.querySelectorAll('.scroll-animate');
+    try {
+        scrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                    scrollObserver.unobserve(entry.target); // Stop observing once shown
+                }
+            });
+        }, observerOptions);
+    } catch (error) {
+        revealAllScrollAnimations(animateElements);
+        return;
+    }
+
     animateElements.forEach(el => {
         el.classList.add('observed');
         scrollObserver.observe(el);
