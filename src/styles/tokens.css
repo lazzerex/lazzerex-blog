@@ -1,0 +1,62 @@
+:root {
+  /* Backgrounds */
+  --color-bg-page:            #0b0d12;
+  --color-bg-shell:           #12151d;
+  --color-bg-panel:           #171b24;
+  --color-bg-panel-elevated:  #1d2330;
+  --color-bg-row-hover:       #1a1f2e;
+
+  /* Borders */
+  --color-border-default:     #2b3345;
+  --color-border-strong:      #3c4860;
+  --color-border-accent:      #87b7ff33;
+
+  /* Text */
+  --color-text-primary:       #e8edf7;
+  --color-text-secondary:     #a8b3c7;
+  --color-text-muted:         #7f8aa1;
+
+  /* Accent */
+  --color-accent:             #87b7ff;
+  --color-accent-hover:       #a1c7ff;
+  --color-accent-subtle:      #87b7ff18;
+
+  /* Semantic */
+  --color-success:            #7bd88f;
+  --color-warning:            #f2c97d;
+  --color-danger:             #ef8b8b;
+
+  /* macOS Traffic Lights */
+  --color-traffic-red:        #ff5f57;
+  --color-traffic-yellow:     #febc2e;
+  --color-traffic-green:      #28c840;
+
+  /* Form & Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --border-width: 1px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Optional extra spacing utilities */
+  --space-5: 20px;
+
+  /* Fonts */
+  --font-ui: "Manrope", "Segoe UI", sans-serif;
+  --font-reader: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "Consolas", monospace;
+
+  /* Elevation */
+  --shadow-window: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-panel: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --glow-accent: 0 0 0 2px var(--color-accent-subtle);
+}
