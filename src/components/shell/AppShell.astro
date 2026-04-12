@@ -1,0 +1,27 @@
+---
+import TopBar from "./TopBar.astro";
+import SidebarNav from "./SidebarNav.astro";
+import DockBar from "./DockBar.astro";
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+---
+
+<div class="page-frame">
+  <div class="shell-container">
+    <TopBar />
+
+    <div class="shell-body">
+      <SidebarNav currentPath={currentPath} />
+
+      <main id="main-content" class="content-panel" tabindex="-1">
+        <slot />
+      </main>
+    </div>
+
+    <DockBar currentPath={currentPath} />
+  </div>
+</div>

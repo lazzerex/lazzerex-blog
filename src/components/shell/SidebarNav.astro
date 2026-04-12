@@ -1,0 +1,94 @@
+---
+import { Folder, File, Mail } from 'lucide-astro';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: any;
+  external?: boolean;
+}
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+const folderItems: NavItem[] = [
+  { label: "Projects", href: "#", icon: Folder },
+  { label: "Articles", href: "/", icon: Folder },
+  { label: "My Tools", href: "#", icon: Folder }
+];
+
+const fileItems: NavItem[] = [
+  { label: "About", href: "/about", icon: File }
+];
+
+const contactItems: NavItem[] = [
+  { label: "Email Me", href: "/contact", icon: Mail }
+];
+
+const isActive = (href: string) => {
+  if (href === "/") {
+    return currentPath === "/";
+  }
+
+  return currentPath.startsWith(href);
+};
+---
+
+<aside class="sidebar-nav" aria-label="Primary navigation">
+  <div class="window-chrome" aria-hidden="true">
+    <div class="chrome-dot red"></div>
+    <div class="chrome-dot yellow"></div>
+    <div class="chrome-dot green"></div>
+  </div>
+
+  <section class="sidebar-section">
+    <p class="section-label">Folders</p>
+    <ul>
+      {
+        folderItems.map((item) => (
+          <li>
+            <a class={`sidebar-item ${isActive(item.href) ? "active" : ""}`} href={item.href}>
+              <item.icon size={15} strokeWidth={1.5} class="nav-icon" />
+              <span>{item.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="sidebar-section">
+    <p class="section-label">Files</p>
+    <ul>
+      {
+        fileItems.map((item) => (
+          <li>
+            <a class={`sidebar-item ${isActive(item.href) ? "active" : ""}`} href={item.href}>
+              <item.icon size={15} strokeWidth={1.5} class="nav-icon" />
+              <span>{item.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="sidebar-section">
+    <p class="section-label">Contact</p>
+    <ul>
+      {
+        contactItems.map((item) => (
+          <li>
+            <a class={`sidebar-item ${isActive(item.href) ? "active" : ""}`} href={item.href}>
+              <item.icon size={15} strokeWidth={1.5} class="nav-icon" />
+              <span>{item.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</aside>

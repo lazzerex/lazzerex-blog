@@ -1,0 +1,39 @@
+---
+import { Mail, Folder, Twitter, Linkedin, Github } from 'lucide-astro';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+const isActive = (href: string) => {
+  if (href === "/") return currentPath === "/";
+  return currentPath.startsWith(href);
+};
+---
+
+<footer class="dock-bar" aria-label="Quick navigation dock">
+  <div class="dock-content">
+    <div class="dock-left">
+      <a class={`dock-icon ${isActive('/contact') ? 'active' : ''}`} href="/contact" aria-label="Mail">
+        <Mail size={18} strokeWidth={1.5} />
+      </a>
+      <a class={`dock-icon ${isActive('/') ? 'active' : ''}`} href="/" aria-label="Articles">
+        <Folder size={18} strokeWidth={1.5} />
+      </a>
+    </div>
+
+    <div class="dock-right">
+      <a class="dock-icon" href="https://twitter.com/lazzerex" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+        <Twitter size={18} strokeWidth={1.5} />
+      </a>
+      <a class="dock-icon" href="https://linkedin.com/in/lazzerex" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+        <Linkedin size={18} strokeWidth={1.5} />
+      </a>
+      <a class="dock-icon" href="https://github.com/lazzerex" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <Github size={18} strokeWidth={1.5} />
+      </a>
+    </div>
+  </div>
+</footer>
