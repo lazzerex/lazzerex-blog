@@ -1,0 +1,105 @@
+---
+import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
+import { postSummaries } from "../data/posts";
+import { FileText } from 'lucide-astro';
+
+const PAGE_SIZE = 6;
+const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
+---
+
+<DesktopShellLayout
+  title="Lazzerex | Articles"
+  description="Lazzerex article explorer for technology, science, music, and gaming topics."
+  currentPath="/"
+>
+  <section class="content-window article-window">
+    <p class="window-path" aria-label="Breadcrumb">
+      <span>Home</span>
+      <span class="path-muted">→</span>
+      <span>Articles</span>
+    </p>
+
+    <div class="article-table" role="table" aria-label="Article listing">
+      <div class="article-table-header" role="row">
+        <span role="columnheader">NAME</span>
+        <span class="col-category" role="columnheader">CATEGORY</span>
+        <span role="columnheader">DATE</span>
+      </div>
+
+      <ul class="article-table-body" data-page-size={PAGE_SIZE}>
+        {
+          postSummaries.map((post, index) => (
+            <li class="article-row" role="row" data-row-index={index}>
+              <a class="article-name" href={post.notionUrl} target="_blank" rel="noopener noreferrer" role="cell">
+                <FileText size={16} strokeWidth={1.5} color="var(--color-text-muted)" />
+                <span class="article-title">{post.title}</span>
+              </a>
+              <span class="article-category" role="cell">{post.tag}</span>
+              <span class="article-date" role="cell">{post.date}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      {
+        pageCount > 1 && (
+          <nav class="pagination-dots" aria-label="Article pagination">
+            {
+              Array.from({ length: pageCount }, (_, index) => (
+                <button
+                  type="button"
+                  class={`page-dot ${index === 0 ? "active" : ""}`}
+                  data-page-dot={index}
+                  aria-label={`Go to article page ${index + 1}`}
+                  aria-current={index === 0 ? "page" : undefined}
+                ></button>
+              ))
+            }
+          </nav>
+        )
+      }
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const tableBody = document.querySelector('.article-table-body');
+      const dots = Array.from(document.querySelectorAll('.page-dot'));
+
+      if (!tableBody || dots.length === 0) {
+        return;
+      }
+
+      const rows = Array.from(tableBody.querySelectorAll('.article-row'));
+      const pageSize = Number(tableBody.getAttribute('data-page-size')) || rows.length;
+      const totalPages = Math.ceil(rows.length / pageSize);
+
+      const renderPage = (targetPage) => {
+        const pageIndex = Math.max(0, Math.min(targetPage, totalPages - 1));
+
+        rows.forEach((row, rowIndex) => {
+          const isVisible = rowIndex >= pageIndex * pageSize && rowIndex < (pageIndex + 1) * pageSize;
+          row.style.display = isVisible ? '' : 'none';
+          row.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+        });
+
+        dots.forEach((dot, dotIndex) => {
+          const isActive = dotIndex === pageIndex;
+          dot.classList.toggle('active', isActive);
+
+          if (isActive) {
+            dot.setAttribute('aria-current', 'page');
+          } else {
+            dot.removeAttribute('aria-current');
+          }
+        });
+      };
+
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => renderPage(index));
+      });
+
+      renderPage(0);
+    })();
+  </script>
+</DesktopShellLayout>

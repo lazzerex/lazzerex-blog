@@ -1,0 +1,47 @@
+---
+import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
+---
+
+<DesktopShellLayout
+  title="Lazzerex | About"
+  description="About Lazzerex and the mission behind this blog."
+  currentPath="/about"
+>
+  <section class="content-window">
+    <p class="window-path" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="path-muted">→</span>
+      <span>About</span>
+    </p>
+
+    <article class="detail-article">
+      <h1>About Lazzerex</h1>
+      <p>
+        I am a university student exploring technology, science, music, and gaming through practical learning and focused writing.
+        This blog is where I document ideas, projects, and discoveries in a way that remains useful over time.
+      </p>
+      <p>
+        The long-term goal is to keep this space fast, readable, and independent, with static-first delivery and a clean engineering stack.
+      </p>
+
+      <ul class="meta-grid" aria-label="Profile highlights">
+        <li>
+          <p class="meta-label">Primary Focus</p>
+          <p class="meta-value">Software Engineering and Systems</p>
+        </li>
+        <li>
+          <p class="meta-label">Secondary Focus</p>
+          <p class="meta-value">Science Concepts and Technical Writing</p>
+        </li>
+        <li>
+          <p class="meta-label">Current Platform</p>
+          <p class="meta-value">Astro + Notion + Go (in migration)</p>
+        </li>
+        <li>
+          <p class="meta-label">Publishing Style</p>
+          <p class="meta-value">Concise, practical, and long-term maintainable</p>
+        </li>
+      </ul>
+    </article>
+  </section>
+</DesktopShellLayout>
