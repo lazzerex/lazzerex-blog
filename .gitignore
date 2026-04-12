@@ -1,1 +1,15 @@
 .vercel
+
+# Node/Astro dependencies and build artifacts
+node_modules/
+dist/
+.astro/
+
+# Logs and environment files
+*.log
+.env
+.env.*
+
+# Editor/OS metadata
+.DS_Store
+Thumbs.db
