@@ -5,17 +5,23 @@ import AppShell from "../components/shell/AppShell.astro";
 interface Props {
   title?: string;
   description?: string;
+  ogType?: "website" | "article";
+  ogImage?: string;
+  canonicalUrl?: string;
   currentPath: string;
 }
 
 const {
   title,
   description,
+  ogType,
+  ogImage,
+  canonicalUrl,
   currentPath
 } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} ogType={ogType} ogImage={ogImage} canonicalUrl={canonicalUrl}>
   <AppShell currentPath={currentPath}>
     <slot />
   </AppShell>
