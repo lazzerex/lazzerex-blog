@@ -1,8 +1,9 @@
 ---
 import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
-import { postSummaries } from "../data/posts";
+import { getExplorerPosts } from "../lib/posts";
 import { FileText } from 'lucide-astro';
 
+const postSummaries = await getExplorerPosts();
 const PAGE_SIZE = 6;
 const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 ---
@@ -30,12 +31,12 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
         {
           postSummaries.map((post, index) => (
             <li class="article-row" role="row" data-row-index={index}>
-              <a class="article-name" href={post.notionUrl} target="_blank" rel="noopener noreferrer" role="cell">
+              <a class="article-name" href={`/blog/${post.slug}`} role="cell" title={post.summary}>
                 <FileText size={16} strokeWidth={1.5} color="var(--color-text-muted)" />
                 <span class="article-title">{post.title}</span>
               </a>
-              <span class="article-category" role="cell">{post.tag}</span>
-              <span class="article-date" role="cell">{post.date}</span>
+              <span class="article-category" role="cell">{post.primaryTag}</span>
+              <span class="article-date" role="cell">{post.dateLabel}</span>
             </li>
           ))
         }
