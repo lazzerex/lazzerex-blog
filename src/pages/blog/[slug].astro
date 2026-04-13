@@ -1,0 +1,158 @@
+---
+import DesktopShellLayout from "../../layouts/DesktopShellLayout.astro";
+import { getAllPosts, getPostBySlug } from "../../lib/posts";
+
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
+
+  return posts.map((post) => ({
+    params: { slug: post.slug }
+  }));
+}
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  throw new Error("Missing slug parameter for blog detail route.");
+}
+
+const post = await getPostBySlug(slug);
+
+if (!post) {
+  throw new Error(`Unable to resolve post for slug \"${slug}\".`);
+}
+
+const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : undefined;
+const ogImage = (() => {
+  if (!post.cover) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(post.cover)) {
+    return post.cover;
+  }
+
+  if (!Astro.site) {
+    return undefined;
+  }
+
+  return new URL(post.cover, Astro.site).toString();
+})();
+---
+
+<DesktopShellLayout
+  title={`Lazzerex | ${post.title}`}
+  description={post.summary}
+  ogType="article"
+  ogImage={ogImage}
+  canonicalUrl={canonicalUrl}
+  currentPath="/"
+>
+  <section class="content-window article-window detail-window">
+    <p class="window-path" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="path-muted">→</span>
+      <a href="/">Articles</a>
+      <span class="path-muted">→</span>
+      <span>{post.title}</span>
+    </p>
+
+    <article class="reader-article">
+      <header class="reader-header">
+        <h1>{post.title}</h1>
+        <p class="reader-meta">
+          <span>{post.primaryTag}</span>
+          <span class="reader-meta-dot" aria-hidden="true">•</span>
+          <time datetime={post.date.toISOString()}>{post.dateLabel}</time>
+        </p>
+        <p class="reader-summary">{post.summary}</p>
+      </header>
+
+      <div class="reader-cover-wrap">
+        <img
+          class="reader-cover"
+          src={post.cover}
+          alt={`Cover image for ${post.title}`}
+          width="1200"
+          height="675"
+          loading="lazy"
+        />
+      </div>
+
+      <div class="reader-content">
+        {
+          post.blocks.map((block) => {
+            if (block.type === "heading") {
+              if (block.level === 1) {
+                return <h2>{block.text}</h2>;
+              }
+
+              if (block.level === 2) {
+                return <h2>{block.text}</h2>;
+              }
+
+              if (block.level === 3) {
+                return <h3>{block.text}</h3>;
+              }
+
+              return <h4>{block.text}</h4>;
+            }
+
+            if (block.type === "paragraph") {
+              return <p>{block.text}</p>;
+            }
+
+            if (block.type === "quote") {
+              return <blockquote>{block.text}</blockquote>;
+            }
+
+            if (block.type === "list-item") {
+              if (block.ordered) {
+                return (
+                  <ol>
+                    <li>{block.text}</li>
+                  </ol>
+                );
+              }
+
+              return (
+                <ul>
+                  <li>{block.text}</li>
+                </ul>
+              );
+            }
+
+            if (block.type === "code") {
+              return (
+                <pre>
+                  <code>{block.code}</code>
+                </pre>
+              );
+            }
+
+            if (block.type === "image") {
+              return <img src={block.src} alt={block.alt || "Article image"} loading="lazy" />;
+            }
+
+            if (block.type === "divider") {
+              return <hr />;
+            }
+
+            return null;
+          })
+        }
+      </div>
+
+      {
+        post.notionUrl && (
+          <p class="reader-source">
+            Source:&nbsp;
+            <a href={post.notionUrl} target="_blank" rel="noopener noreferrer">
+              Original Notion page
+            </a>
+          </p>
+        )
+      }
+    </article>
+  </section>
+</DesktopShellLayout>
