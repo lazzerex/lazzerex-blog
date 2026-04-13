@@ -7,11 +7,17 @@ import "../styles/pages.css";
 interface Props {
   title?: string;
   description?: string;
+  ogType?: "website" | "article";
+  ogImage?: string;
+  canonicalUrl?: string;
 }
 
 const {
   title = "Lazzerex Blog",
-  description = "Lazzerex personal blog about technology, science, music, and gaming."
+  description = "Lazzerex personal blog about technology, science, music, and gaming.",
+  ogType = "website",
+  ogImage,
+  canonicalUrl
 } = Astro.props;
 ---
 
@@ -22,9 +28,19 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Lazzerex Blog" />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
