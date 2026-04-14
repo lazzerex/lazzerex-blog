@@ -49,22 +49,32 @@ const ogImage = (() => {
   currentPath="/"
 >
   <section class="content-window article-window detail-window">
-    <p class="window-path" aria-label="Breadcrumb">
-      <a href="/">Home</a>
-      <span class="path-muted">→</span>
-      <a href="/">Articles</a>
-      <span class="path-muted">→</span>
-      <span>{post.title}</span>
-    </p>
+    <div class="window-path has-glass-toggle">
+      <p class="window-path-segments" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span class="path-muted">→</span>
+        <a href="/">Articles</a>
+        <span class="path-muted">→</span>
+        <span>{post.title}</span>
+      </p>
+      <button type="button" class="glass-toggle" data-glass-toggle aria-pressed="true">Glass: On</button>
+    </div>
 
     <article class="reader-article">
       <header class="reader-header">
         <h1>{post.title}</h1>
         <p class="reader-meta">
-          <span>{post.primaryTag}</span>
+          <span>{post.author}</span>
           <span class="reader-meta-dot" aria-hidden="true">•</span>
           <time datetime={post.date.toISOString()}>{post.dateLabel}</time>
         </p>
+        <ul class="reader-tags" aria-label="Post tags">
+          {
+            post.tags.map((tag) => (
+              <li>{tag}</li>
+            ))
+          }
+        </ul>
         <p class="reader-summary">{post.summary}</p>
       </header>
 
@@ -148,11 +158,55 @@ const ogImage = (() => {
           <p class="reader-source">
             Source:&nbsp;
             <a href={post.notionUrl} target="_blank" rel="noopener noreferrer">
-              Original Notion page
+              Published Notion page
             </a>
           </p>
         )
       }
     </article>
   </section>
+
+  <script is:inline>
+    (() => {
+      const toggleButton = document.querySelector('[data-glass-toggle]');
+
+      if (!(toggleButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const body = document.body;
+      const storageKey = 'lazzerex:blog-glass-enabled';
+
+      const readPreference = () => {
+        try {
+          return localStorage.getItem(storageKey) !== 'off';
+        } catch {
+          return true;
+        }
+      };
+
+      const writePreference = (enabled) => {
+        try {
+          localStorage.setItem(storageKey, enabled ? 'on' : 'off');
+        } catch {
+          return;
+        }
+      };
+
+      const applyPreference = (enabled) => {
+        body.classList.toggle('glass-disabled', !enabled);
+        toggleButton.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        toggleButton.textContent = enabled ? 'Glass: On' : 'Glass: Off';
+      };
+
+      let isGlassEnabled = readPreference();
+      applyPreference(isGlassEnabled);
+
+      toggleButton.addEventListener('click', () => {
+        isGlassEnabled = !isGlassEnabled;
+        applyPreference(isGlassEnabled);
+        writePreference(isGlassEnabled);
+      });
+    })();
+  </script>
 </DesktopShellLayout>
