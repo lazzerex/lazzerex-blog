@@ -13,7 +13,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
   description="Lazzerex article explorer for technology, science, music, and gaming topics."
   currentPath="/"
 >
-  <section class="content-window article-window">
+  <section class="content-window article-window has-hover-preview">
     <p class="window-path" aria-label="Breadcrumb">
       <span>Home</span>
       <span class="path-muted">→</span>
@@ -30,8 +30,18 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       <ul class="article-table-body" data-page-size={PAGE_SIZE}>
         {
           postSummaries.map((post, index) => (
-            <li class="article-row" role="row" data-row-index={index}>
-              <a class="article-name" href={`/blog/${post.slug}`} role="cell" title={post.summary}>
+            <li
+              class="article-row"
+              role="row"
+              data-row-index={index}
+              data-preview-title={post.title}
+              data-preview-cover={post.cover}
+              data-preview-summary={post.summary}
+              data-preview-tags={post.tags.join(", ")}
+              data-preview-date={post.dateLabel}
+              data-preview-author={post.author}
+            >
+              <a class="article-name" href={`/blog/${post.slug}`} role="cell">
                 <FileText size={16} strokeWidth={1.5} color="var(--color-text-muted)" />
                 <span class="article-title">{post.title}</span>
               </a>
@@ -60,20 +70,202 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
         )
       }
     </div>
+
+    <aside class="article-hover-preview" data-article-preview aria-hidden="true">
+      <div class="article-hover-preview-media">
+        <img src="/images/folder-bg.jfif" alt="" loading="lazy" data-preview-image />
+        <div class="article-hover-preview-spinner" data-preview-spinner aria-hidden="true">
+          <span class="spinner-ring" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="article-hover-preview-content">
+        <p class="article-hover-preview-label">Quick Preview</p>
+        <h2 class="article-hover-preview-title" data-preview-title>Hover an article</h2>
+        <p class="article-hover-preview-meta">
+          <span data-preview-date></span>
+          <span class="meta-separator" aria-hidden="true">|</span>
+          <span data-preview-author></span>
+        </p>
+        <p class="article-hover-preview-summary" data-preview-summary></p>
+        <p class="article-hover-preview-tags" data-preview-tags></p>
+      </div>
+    </aside>
   </section>
 
   <script is:inline>
     (() => {
       const tableBody = document.querySelector('.article-table-body');
       const dots = Array.from(document.querySelectorAll('.page-dot'));
+      const previewHost = document.querySelector('.has-hover-preview');
+      const previewCard = document.querySelector('[data-article-preview]');
+      const previewImage = document.querySelector('[data-preview-image]');
+      const previewSpinner = document.querySelector('[data-preview-spinner]');
+      const previewTitle = previewCard?.querySelector('[data-preview-title]');
+      const previewDate = previewCard?.querySelector('[data-preview-date]');
+      const previewAuthor = previewCard?.querySelector('[data-preview-author]');
+      const previewSummary = previewCard?.querySelector('[data-preview-summary]');
+      const previewTags = previewCard?.querySelector('[data-preview-tags]');
+      const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-      if (!tableBody || dots.length === 0) {
+      if (!tableBody) {
         return;
       }
 
       const rows = Array.from(tableBody.querySelectorAll('.article-row'));
       const pageSize = Number(tableBody.getAttribute('data-page-size')) || rows.length;
       const totalPages = Math.ceil(rows.length / pageSize);
+      let activePreviewRow = null;
+      let previewRequestId = 0;
+
+      const setPreviewLoading = (isLoading) => {
+        if (!previewCard) {
+          return;
+        }
+
+        previewCard.classList.toggle('is-image-loading', isLoading);
+        if (previewSpinner instanceof HTMLElement) {
+          previewSpinner.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+        }
+      };
+
+      const positionPreview = (row) => {
+        if (!previewCard || !previewHost) {
+          return;
+        }
+
+        const hostRect = previewHost.getBoundingClientRect();
+        const anchorElement = row.querySelector('.article-name') ?? row;
+        const anchorRect = anchorElement.getBoundingClientRect();
+
+        const cardWidth = previewCard.offsetWidth || 340;
+        const cardHeight = previewCard.offsetHeight || 340;
+
+        const anchorRelativeLeft = anchorRect.left - hostRect.left;
+        const anchorInfluencedLeft = anchorRelativeLeft + (anchorRect.width * 0.38);
+        const middleRightBiasLeft = (hostRect.width * 0.5) + 72;
+
+        let left = Math.max(anchorInfluencedLeft, middleRightBiasLeft);
+        let top = anchorRect.top - hostRect.top + (anchorRect.height / 2) - (cardHeight / 2);
+
+        left = Math.min(Math.max(left, 12), hostRect.width - cardWidth - 12);
+        top = Math.min(Math.max(top, 12), hostRect.height - cardHeight - 12);
+
+        previewCard.style.left = `${left}px`;
+        previewCard.style.top = `${top}px`;
+      };
+
+      const loadPreviewImage = (cover, title) => {
+        if (!(previewImage instanceof HTMLImageElement)) {
+          return;
+        }
+
+        previewRequestId += 1;
+        const requestId = previewRequestId;
+        const fallbackCover = '/images/folder-bg.jfif';
+        const normalizedCover = cover || fallbackCover;
+
+        setPreviewLoading(true);
+
+        const imageProbe = new Image();
+        imageProbe.decoding = 'async';
+        imageProbe.src = normalizedCover;
+
+        const finishLoad = (resolvedSrc) => {
+          if (requestId !== previewRequestId) {
+            return;
+          }
+
+          previewImage.src = resolvedSrc;
+          previewImage.alt = `Preview cover for ${title}`;
+          setPreviewLoading(false);
+        };
+
+        imageProbe.onload = () => finishLoad(normalizedCover);
+        imageProbe.onerror = () => finishLoad(fallbackCover);
+
+        if (imageProbe.complete && imageProbe.naturalWidth > 0) {
+          finishLoad(normalizedCover);
+        }
+      };
+
+      const hidePreview = () => {
+        if (!previewCard) {
+          return;
+        }
+
+        previewRequestId += 1;
+        setPreviewLoading(false);
+        previewCard.classList.remove('is-visible');
+        previewCard.setAttribute('aria-hidden', 'true');
+        activePreviewRow = null;
+      };
+
+      const showPreview = (row) => {
+        if (!previewCard || !previewTitle || !previewDate || !previewAuthor || !previewSummary || !previewTags) {
+          return;
+        }
+
+        const title = row.getAttribute('data-preview-title') || 'Untitled article';
+        const cover = row.getAttribute('data-preview-cover') || '/images/folder-bg.jfif';
+        const summary = row.getAttribute('data-preview-summary') || 'No summary available for this article yet.';
+        const tags = row.getAttribute('data-preview-tags') || 'General';
+        const date = row.getAttribute('data-preview-date') || '';
+        const author = row.getAttribute('data-preview-author') || 'H. S. N. Bình';
+
+        previewTitle.textContent = title;
+        previewDate.textContent = date;
+        previewAuthor.textContent = author;
+        previewSummary.textContent = summary;
+        previewTags.textContent = tags;
+
+        loadPreviewImage(cover, title);
+
+        previewCard.classList.add('is-visible');
+        previewCard.setAttribute('aria-hidden', 'false');
+        activePreviewRow = row;
+
+        requestAnimationFrame(() => {
+          positionPreview(row);
+        });
+      };
+
+      rows.forEach((row) => {
+        row.addEventListener('mouseenter', () => {
+          if (!supportsHover) {
+            return;
+          }
+
+          showPreview(row);
+        });
+
+        row.addEventListener('mousemove', () => {
+          if (!supportsHover || !previewCard.classList.contains('is-visible')) {
+            return;
+          }
+
+          positionPreview(row);
+        });
+
+        row.addEventListener('mouseleave', () => {
+          if (!supportsHover) {
+            return;
+          }
+
+          hidePreview();
+        });
+
+        row.addEventListener('focusin', () => {
+          showPreview(row);
+        });
+
+        row.addEventListener('focusout', (event) => {
+          if (row.contains(event.relatedTarget)) {
+            return;
+          }
+
+          hidePreview();
+        });
+      });
 
       const renderPage = (targetPage) => {
         const pageIndex = Math.max(0, Math.min(targetPage, totalPages - 1));
@@ -82,23 +274,39 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
           const isVisible = rowIndex >= pageIndex * pageSize && rowIndex < (pageIndex + 1) * pageSize;
           row.style.display = isVisible ? '' : 'none';
           row.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-        });
 
-        dots.forEach((dot, dotIndex) => {
-          const isActive = dotIndex === pageIndex;
-          dot.classList.toggle('active', isActive);
-
-          if (isActive) {
-            dot.setAttribute('aria-current', 'page');
-          } else {
-            dot.removeAttribute('aria-current');
+          if (!isVisible && activePreviewRow === row) {
+            hidePreview();
           }
         });
+
+        if (dots.length > 0) {
+          dots.forEach((dot, dotIndex) => {
+            const isActive = dotIndex === pageIndex;
+            dot.classList.toggle('active', isActive);
+
+            if (isActive) {
+              dot.setAttribute('aria-current', 'page');
+            } else {
+              dot.removeAttribute('aria-current');
+            }
+          });
+        }
       };
 
-      dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => renderPage(index));
+      tableBody.addEventListener('scroll', () => {
+        if (!activePreviewRow) {
+          return;
+        }
+
+        positionPreview(activePreviewRow);
       });
+
+      if (dots.length > 0) {
+        dots.forEach((dot, index) => {
+          dot.addEventListener('click', () => renderPage(index));
+        });
+      }
 
       renderPage(0);
     })();
