@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Rendering-Static%20Site-1f6feb?style=flat"/>
 </p>
 
-This repository powers my personal blog and publishing platform.
+This repository powers my personal blog and publishing platform. Built with Astro and Notion CMS.
 
 I am a university student writing about technology, systems, science, music, and gaming.
 The personal part is simple: this is where I publish my learning journey.
