@@ -13,6 +13,7 @@ export interface NotionPost {
   title: string;
   slug: string;
   date: Date;
+  author?: string;
   tags: string[];
   summary?: string;
   cover?: string;
@@ -159,6 +160,22 @@ function getPropertyCheckbox(property: unknown): boolean | undefined {
   return Boolean(value.checkbox);
 }
 
+function getPropertyPeople(property: unknown): string[] {
+  if (!property || typeof property !== "object") {
+    return [];
+  }
+
+  const value = property as Record<string, any>;
+
+  if (value.type !== "people" || !Array.isArray(value.people)) {
+    return [];
+  }
+
+  return value.people
+    .map((person: any) => String(person?.name ?? "").trim())
+    .filter(Boolean);
+}
+
 function getCoverFromFilesProperty(property: unknown): string | undefined {
   if (!property || typeof property !== "object") {
     return undefined;
@@ -269,6 +286,18 @@ function getPageSummary(page: PageObjectResponse): string | undefined {
   const summaryText = getPropertyText(summaryProperty);
 
   return summaryText || undefined;
+}
+
+function getPageAuthor(page: PageObjectResponse): string | undefined {
+  const authorProperty = getProperty(page, ["Author", "Authors", "Writer"]);
+  const people = getPropertyPeople(authorProperty);
+
+  if (people.length > 0) {
+    return people.join(", ");
+  }
+
+  const authorText = getPropertyText(authorProperty);
+  return authorText || undefined;
 }
 
 function getPageTags(page: PageObjectResponse): string[] {
@@ -577,6 +606,7 @@ export async function fetchNotionPublishedPosts(): Promise<NotionPost[]> {
       const title = getPageTitle(page);
       const slug = getPageSlug(page, title);
       const date = getPageDate(page);
+      const author = getPageAuthor(page);
       const tags = getPageTags(page);
       const summary = getPageSummary(page);
       const cover = getPageCover(page);
@@ -590,6 +620,7 @@ export async function fetchNotionPublishedPosts(): Promise<NotionPost[]> {
         title,
         slug,
         date,
+        author,
         tags,
         summary,
         cover,
