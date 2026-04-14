@@ -1,10 +1,12 @@
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
+import { resolvePublishedNotionUrl } from "../data/posts";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
 const DEFAULT_COVER = "/images/folder-bg.jfif";
+const DEFAULT_AUTHOR = "H. S. N. Bình";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -17,6 +19,7 @@ export interface ExplorerPost {
   slug: string;
   date: Date;
   dateLabel: string;
+  author: string;
   tags: string[];
   primaryTag: string;
   summary: string;
@@ -62,17 +65,20 @@ function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentParser):
   const inferredSummary = extractExcerpt(post.content, 180);
   const summary = post.summary?.trim() || inferredSummary || DEFAULT_SUMMARY;
   const cover = post.cover?.trim() || DEFAULT_COVER;
+  const author = post.author?.trim() || DEFAULT_AUTHOR;
+  const notionUrl = resolvePublishedNotionUrl(post.title, post.notionUrl);
 
   return {
     title: post.title,
     slug: post.slug,
     date: post.date,
     dateLabel: dateFormatter.format(post.date),
+    author,
     tags,
     primaryTag: tags[0],
     summary,
     cover,
-    notionUrl: post.notionUrl,
+    notionUrl,
     content: post.content,
     blocks: post.blocks.length > 0 ? post.blocks : parser.parse(post.content)
   };
