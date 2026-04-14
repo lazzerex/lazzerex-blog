@@ -139,3 +139,46 @@ export const postSummaries: PostSummary[] = [
     notionUrl: "https://candle-millennium-dfe.notion.site/How-Zelda-Revolutionized-Game-Saving-f7200e752c0441dba8cf3c6c14c63599"
   }
 ];
+
+const NOTION_ID_PATTERN = /([a-f0-9]{32})(?=\?|$)/i;
+
+function extractNotionPageId(url: string): string | undefined {
+  const match = url.match(NOTION_ID_PATTERN);
+  return match?.[1]?.toLowerCase();
+}
+
+function normalizeTitle(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "")
+    .toLowerCase();
+}
+
+const publishedNotionUrlByPageId = new Map<string, string>();
+const publishedNotionUrlByTitle = new Map<string, string>();
+
+for (const post of postSummaries) {
+  const pageId = extractNotionPageId(post.notionUrl);
+  if (pageId) {
+    publishedNotionUrlByPageId.set(pageId, post.notionUrl);
+  }
+
+  publishedNotionUrlByTitle.set(normalizeTitle(post.title), post.notionUrl);
+}
+
+export function resolvePublishedNotionUrl(title: string, notionUrl?: string): string | undefined {
+  if (notionUrl) {
+    const pageId = extractNotionPageId(notionUrl);
+    if (pageId && publishedNotionUrlByPageId.has(pageId)) {
+      return publishedNotionUrlByPageId.get(pageId);
+    }
+  }
+
+  const titleKey = normalizeTitle(title);
+  if (publishedNotionUrlByTitle.has(titleKey)) {
+    return publishedNotionUrlByTitle.get(titleKey);
+  }
+
+  return notionUrl;
+}
