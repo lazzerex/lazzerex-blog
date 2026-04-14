@@ -51,5 +51,89 @@ const {
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <slot />
+
+    <script is:inline>
+      (() => {
+        const body = document.body;
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const routeSwitchDelay = prefersReducedMotion ? 0 : 240;
+        const markReady = () => {
+          body.classList.add("is-ready");
+        };
+
+        if (document.readyState === "complete") {
+          markReady();
+        } else {
+          window.addEventListener("load", markReady, { once: true });
+        }
+
+        let navigating = false;
+
+        document.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) {
+            return;
+          }
+
+          const anchor = target.closest("a[href]");
+          if (!(anchor instanceof HTMLAnchorElement)) {
+            return;
+          }
+
+          const href = anchor.getAttribute("href");
+          if (!href) {
+            return;
+          }
+
+          if (
+            href.startsWith("#") ||
+            href.startsWith("mailto:") ||
+            href.startsWith("tel:") ||
+            href.startsWith("javascript:")
+          ) {
+            return;
+          }
+
+          if (anchor.target === "_blank" || anchor.hasAttribute("download")) {
+            return;
+          }
+
+          if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+            return;
+          }
+
+          const destination = new URL(href, window.location.href);
+          if (destination.origin !== window.location.origin) {
+            return;
+          }
+
+          const samePath = destination.pathname === window.location.pathname;
+          const sameSearch = destination.search === window.location.search;
+          const sameHash = destination.hash === window.location.hash;
+          if (samePath && sameSearch && sameHash) {
+            return;
+          }
+
+          event.preventDefault();
+
+          if (navigating) {
+            return;
+          }
+
+          navigating = true;
+          body.classList.add("is-navigating");
+
+          window.setTimeout(() => {
+            window.location.assign(destination.toString());
+          }, routeSwitchDelay);
+        });
+
+        window.addEventListener("pageshow", () => {
+          navigating = false;
+          body.classList.add("is-ready");
+          body.classList.remove("is-navigating");
+        });
+      })();
+    </script>
   </body>
 </html>
