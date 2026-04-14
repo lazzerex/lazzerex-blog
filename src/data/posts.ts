@@ -157,6 +157,25 @@ function normalizeTitle(value: string): string {
 
 const publishedNotionUrlByPageId = new Map<string, string>();
 const publishedNotionUrlByTitle = new Map<string, string>();
+const localCoverBySlug = new Map<string, string>([
+  ["the-girl-from-the-other-side", "/images/thegirlfromtheotherside.jpg"],
+  ["the-backdoor-that-almost-broke-the-internet", "/images/linux.png"],
+  ["getting-to-know-os", "/images/os.jpg"],
+  ["the-secret-behind-codes", "/images/hardware.jfif"],
+  ["coding-the-cosmos", "/images/black-hole.jpg"],
+  ["the-foundation-of-ai-problem-solving", "/images/dfs_bfs.png"],
+  ["my-solution-leetcode-231", "/images/leetcode.png"],
+  ["what-is-an-operating-system", "/images/operating-system.jpg"],
+  ["the-bittersweet-beauty-of-youth", "/images/sakurazuki-thumbnail.jpg"],
+  ["understanding-ai-concept", "/images/ai-thumbnail.jpg"],
+  ["echoes-beyond-the-canvas-of-reality", "/images/miserere.png"],
+  ["the-art-of-leitmotif", "/images/undertale.webp"],
+  ["model-context-protocol", "/images/mcp.jpg"],
+  ["the-system-architecture-of-nes", "/images/nes.jpg"],
+  ["my-solution-to-leetcode-1353", "/images/leetcode.png"],
+  ["asynchronous-programming", "/images/async.png"],
+  ["time-crystal", "/images/time.png"]
+]);
 
 for (const post of postSummaries) {
   const pageId = extractNotionPageId(post.notionUrl);
@@ -181,4 +200,9 @@ export function resolvePublishedNotionUrl(title: string, notionUrl?: string): st
   }
 
   return notionUrl;
+}
+
+export function resolveLocalCoverBySlug(slug: string): string | undefined {
+  const normalizedSlug = slug.trim().toLowerCase();
+  return localCoverBySlug.get(normalizedSlug);
 }
