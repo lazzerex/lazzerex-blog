@@ -8,12 +8,49 @@ body {
   padding: 0;
 }
 
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
 body {
   min-height: 100vh;
   font-family: var(--font-ui);
   color: var(--color-text-primary);
   background: var(--color-bg-page);
   line-height: 1.5;
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: var(--scrollbar-thumb);
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+:where(html, body, .sidebar-nav, .content-panel, .article-table-body, .reader-content pre)::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 a {

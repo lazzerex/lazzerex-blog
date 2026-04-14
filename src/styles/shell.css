@@ -37,7 +37,7 @@
 
 .shell-container {
   width: min(1460px, 100%);
-  min-height: clamp(620px, 82vh, 760px);
+  height: clamp(620px, 82vh, 760px);
   max-height: calc(100vh - (var(--space-4) * 2));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -61,13 +61,11 @@
   pointer-events: none;
   background-image:
     linear-gradient(155deg, #14171c 0%, #171b21 58%, #1b1f25 100%),
-    linear-gradient(160deg, rgba(98, 108, 124, 0.04) 0%, rgba(98, 108, 124, 0.015) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-  background-position: center, center, center;
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-size: 100% 100%, 100% 100%, 220px 220px;
-  background-blend-mode: normal, screen, soft-light;
-  opacity: 0.9;
+    linear-gradient(160deg, rgba(98, 108, 124, 0.04) 0%, rgba(98, 108, 124, 0.015) 100%);
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%;
+  opacity: 0.85;
 }
 
 .shell-container::after {
@@ -86,6 +84,24 @@
   z-index: 1;
 }
 
+body.is-ready .shell-container {
+  animation: none;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 220ms ease,
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 220ms ease,
+    box-shadow 220ms ease;
+}
+
+body.is-navigating .shell-container {
+  opacity: 0;
+  transform: translateY(12px) scale(0.992);
+  filter: blur(1.4px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.32);
+}
+
 @keyframes shell-enter {
   to {
     opacity: 1;
@@ -99,8 +115,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(186, 190, 198, 0.12);
-  background: rgba(34, 36, 40, 0.66);
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
 }
 
 .top-bar-left {
@@ -162,21 +180,49 @@
   min-height: 0;
   position: relative;
   isolation: isolate;
-  border: 1px solid rgba(186, 190, 198, 0.12);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: rgba(11, 13, 17, 0.84);
+  background: var(--glass-surface-soft);
+}
+
+.shell-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("/images/folder-bg.jfif") center/cover no-repeat;
+  filter: blur(11px) brightness(0.48) saturate(0.78);
+  transform: scale(1.06);
+  opacity: 0.72;
+}
+
+.shell-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(160deg, rgba(7, 11, 16, 0.66) 0%, rgba(8, 12, 18, 0.54) 56%, rgba(6, 10, 15, 0.72) 100%),
+    radial-gradient(120% 120% at 50% 100%, rgba(0, 0, 0, 0.02) 48%, rgba(3, 7, 12, 0.34) 100%);
+}
+
+.shell-body > * {
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar-nav {
-  background: rgba(46, 48, 53, 0.62);
-  border-right: 1px solid rgba(186, 190, 198, 0.12);
+  background: rgba(24, 30, 40, 0.42);
+  border-right: 1px solid var(--glass-border);
   padding: 0 var(--space-2) var(--space-4);
   min-height: 0;
   overflow: auto;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px) saturate(102%);
-  -webkit-backdrop-filter: blur(10px) saturate(102%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(11px) saturate(114%);
+  -webkit-backdrop-filter: blur(11px) saturate(114%);
 }
 
 .window-chrome {
@@ -274,8 +320,10 @@
 
 .dock-bar {
   height: 40px;
-  border-top: 1px solid rgba(186, 190, 198, 0.12);
-  background: rgba(34, 36, 40, 0.66);
+  border-top: 1px solid var(--glass-border);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
 }
 
 .dock-content {
@@ -334,7 +382,7 @@
 
   .shell-container {
     width: min(100%, calc(100vw - 20px));
-    min-height: clamp(600px, 80vh, 740px);
+    height: clamp(600px, 80vh, 740px);
   }
 
   .shell-body {
@@ -358,7 +406,8 @@
 
   .shell-container {
     width: 100%;
-    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100dvh;
     max-height: none;
     display: block;
     border-radius: 0;

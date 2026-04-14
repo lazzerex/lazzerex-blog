@@ -59,4 +59,20 @@
   --shadow-window: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
   --shadow-panel: 0 2px 12px rgba(0, 0, 0, 0.25);
   --glow-accent: 0 0 0 2px var(--color-accent-subtle);
+
+  /* Glass */
+  --glass-surface: rgba(14, 18, 26, 0.44);
+  --glass-surface-strong: rgba(10, 14, 21, 0.62);
+  --glass-surface-soft: rgba(20, 26, 36, 0.34);
+  --glass-border: rgba(176, 191, 220, 0.22);
+  --glass-border-strong: rgba(176, 191, 220, 0.3);
+  --glass-blur: 15px;
+  --glass-saturation: 132%;
+
+  /* Scrollbar */
+  --scrollbar-size: 11px;
+  --scrollbar-track: rgba(10, 14, 20, 0.72);
+  --scrollbar-thumb: rgba(135, 183, 255, 0.42);
+  --scrollbar-thumb-hover: rgba(161, 199, 255, 0.66);
+  --scrollbar-thumb-active: rgba(161, 199, 255, 0.82);
 }
