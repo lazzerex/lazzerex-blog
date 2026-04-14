@@ -1,7 +1,7 @@
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
-import { resolvePublishedNotionUrl } from "../data/posts";
+import { resolveLocalCoverBySlug, resolvePublishedNotionUrl } from "../data/posts";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
@@ -64,7 +64,16 @@ function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentParser):
   const tags = normalizeTags(post.tags);
   const inferredSummary = extractExcerpt(post.content, 180);
   const summary = post.summary?.trim() || inferredSummary || DEFAULT_SUMMARY;
-  const cover = post.cover?.trim() || DEFAULT_COVER;
+  const rawCover = post.cover?.trim() || "";
+  const localCoverFallback = resolveLocalCoverBySlug(post.slug);
+  const isExpiringNotionAsset =
+    /^https?:\/\/prod-files-secure\.s3\.[^\s]+/i.test(rawCover) &&
+    /[?&]X-Amz-Expires=/i.test(rawCover);
+  const cover =
+    (isExpiringNotionAsset ? localCoverFallback : undefined) ||
+    rawCover ||
+    localCoverFallback ||
+    DEFAULT_COVER;
   const author = post.author?.trim() || DEFAULT_AUTHOR;
   const notionUrl = resolvePublishedNotionUrl(post.title, post.notionUrl);
 
