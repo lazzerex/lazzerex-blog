@@ -126,7 +126,7 @@ func (store *Store) IncrementView(ctx context.Context, slug, ipHash string) (int
 		INSERT INTO post_views (slug, count, updated_at)
 		VALUES (?, 1, CURRENT_TIMESTAMP)
 		ON CONFLICT(slug)
-		DO UPDATE SET count = count + 1, updated_at = CURRENT_TIMESTAMP;
+		DO UPDATE SET count = post_views.count + 1, updated_at = CURRENT_TIMESTAMP;
 	`), normalizedSlug); err != nil {
 		return 0, err
 	}
@@ -224,7 +224,7 @@ func (store *Store) ToggleReaction(ctx context.Context, slug, visitorHash string
 			INSERT INTO post_reaction_counts (slug, likes_count, updated_at)
 			VALUES (?, 1, CURRENT_TIMESTAMP)
 			ON CONFLICT(slug)
-			DO UPDATE SET likes_count = likes_count + 1, updated_at = CURRENT_TIMESTAMP
+			DO UPDATE SET likes_count = post_reaction_counts.likes_count + 1, updated_at = CURRENT_TIMESTAMP
 		`), normalizedSlug); err != nil {
 			return ReactionState{}, err
 		}
@@ -252,7 +252,7 @@ func (store *Store) ToggleReaction(ctx context.Context, slug, visitorHash string
 			VALUES (?, 0, CURRENT_TIMESTAMP)
 			ON CONFLICT(slug)
 			DO UPDATE SET
-				likes_count = CASE WHEN likes_count > 0 THEN likes_count - 1 ELSE 0 END,
+				likes_count = CASE WHEN post_reaction_counts.likes_count > 0 THEN post_reaction_counts.likes_count - 1 ELSE 0 END,
 				updated_at = CURRENT_TIMESTAMP
 		`), normalizedSlug); err != nil {
 			return ReactionState{}, err
