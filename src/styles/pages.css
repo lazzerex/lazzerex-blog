@@ -590,19 +590,49 @@
 
 .reader-engagement {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .engagement-reaction-panel,
-.engagement-comments-panel {
+.engagement-comments-panel,
+.engagement-compose-panel {
+  position: relative;
   border: 1px solid rgba(186, 190, 198, 0.2);
   border-radius: var(--radius-md);
-  background: rgba(11, 16, 24, 0.56);
+  background: linear-gradient(165deg, rgba(18, 28, 42, 0.72), rgba(8, 13, 22, 0.56));
   backdrop-filter: blur(12px) saturate(122%);
   -webkit-backdrop-filter: blur(12px) saturate(122%);
   padding: var(--space-4);
   display: grid;
   gap: var(--space-3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 30px rgba(4, 7, 14, 0.32);
+}
+
+.engagement-reaction-panel::before,
+.engagement-comments-panel::before,
+.engagement-compose-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(135, 183, 255, 0.26) 35%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  pointer-events: none;
+}
+
+.engagement-panel-kicker {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .engagement-reaction-panel h2 {
@@ -675,6 +705,11 @@
   gap: var(--space-3);
 }
 
+.engagement-comments-header {
+  display: grid;
+  gap: 6px;
+}
+
 .engagement-comments h2 {
   margin: 0;
   color: var(--color-text-primary);
@@ -733,9 +768,24 @@
   word-break: break-word;
 }
 
+.engagement-compose-panel h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.engagement-compose-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
 .engagement-comment-form {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .engagement-comment-form label {
@@ -755,6 +805,10 @@
   padding: 10px 12px;
 }
 
+.engagement-comment-form textarea {
+  min-height: 134px;
+}
+
 .engagement-comment-form input:focus-visible,
 .engagement-comment-form textarea:focus-visible,
 .engagement-like-button:focus-visible,
@@ -764,10 +818,9 @@
 }
 
 .comment-submit {
-  justify-self: start;
   border: 1px solid rgba(176, 191, 220, 0.38);
   border-radius: 999px;
-  background: rgba(26, 36, 52, 0.7);
+  background: linear-gradient(160deg, rgba(48, 66, 95, 0.88), rgba(29, 41, 60, 0.9));
   color: var(--color-text-primary);
   font-family: var(--font-ui);
   font-size: 12px;
@@ -781,13 +834,33 @@
 }
 
 .comment-submit:hover {
-  background: rgba(35, 46, 67, 0.78);
+  background: linear-gradient(160deg, rgba(62, 84, 120, 0.9), rgba(37, 53, 77, 0.92));
   border-color: rgba(161, 199, 255, 0.56);
 }
 
 .comment-submit:disabled {
   opacity: 0.72;
   cursor: wait;
+}
+
+.engagement-compose-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.engagement-compose-status {
+  margin: 0;
+  min-height: 18px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.engagement-compose-status.is-error {
+  color: var(--color-warning);
 }
 
 .meta-grid {
@@ -855,7 +928,8 @@ body.glass-disabled .detail-window .reader-content pre,
 body.glass-disabled .detail-window .reader-tags li,
 body.glass-disabled .detail-window .reader-engagement,
 body.glass-disabled .detail-window .engagement-reaction-panel,
-body.glass-disabled .detail-window .engagement-comments-panel {
+body.glass-disabled .detail-window .engagement-comments-panel,
+body.glass-disabled .detail-window .engagement-compose-panel {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -876,7 +950,8 @@ body.glass-disabled .detail-window .reader-tags li {
 }
 
 body.glass-disabled .detail-window .engagement-reaction-panel,
-body.glass-disabled .detail-window .engagement-comments-panel {
+body.glass-disabled .detail-window .engagement-comments-panel,
+body.glass-disabled .detail-window .engagement-compose-panel {
   background: rgba(13, 16, 23, 0.92);
 }
 
@@ -980,6 +1055,11 @@ body.glass-disabled .detail-window .engagement-comments-panel {
 
   .engagement-like-row {
     flex-wrap: wrap;
+  }
+
+  .engagement-compose-actions {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .reader-cover-wrap {
