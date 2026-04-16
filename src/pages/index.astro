@@ -34,6 +34,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
               class="article-row"
               role="row"
               data-row-index={index}
+              data-post-slug={post.slug}
               data-preview-title={post.title}
               data-preview-cover={post.cover}
               data-preview-summary={post.summary}
@@ -106,6 +107,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       const previewSummary = previewCard?.querySelector('[data-preview-summary]');
       const previewTags = previewCard?.querySelector('[data-preview-tags]');
       const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const runtimeApi = window.lazzerexRuntimeApi;
 
       if (!tableBody) {
         return;
@@ -200,6 +202,32 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
         activePreviewRow = null;
       };
 
+      const trackOpenDetail = (slug) => {
+        if (!runtimeApi || typeof runtimeApi.track !== 'function') {
+          return;
+        }
+
+        const normalizedSlug = String(slug || '').trim().toLowerCase();
+        if (!normalizedSlug) {
+          return;
+        }
+
+        runtimeApi.track(
+          {
+            slug: normalizedSlug,
+            event: 'open_detail',
+            metadata: {
+              source: 'article_list'
+            }
+          },
+          {
+            preferBeacon: true,
+            retries: 0,
+            timeoutMs: 1400
+          }
+        );
+      };
+
       const showPreview = (row) => {
         if (!previewCard || !previewTitle || !previewDate || !previewAuthor || !previewSummary || !previewTags) {
           return;
@@ -265,6 +293,25 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 
           hidePreview();
         });
+      });
+
+      tableBody.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+
+        const articleLink = target.closest('.article-name[href]');
+        if (!(articleLink instanceof HTMLAnchorElement)) {
+          return;
+        }
+
+        const row = articleLink.closest('.article-row');
+        if (!(row instanceof HTMLElement)) {
+          return;
+        }
+
+        trackOpenDetail(row.getAttribute('data-post-slug'));
       });
 
       const renderPage = (targetPage) => {

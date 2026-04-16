@@ -163,11 +163,354 @@ const ogImage = (() => {
           </p>
         )
       }
+
+      <section class="reader-engagement" aria-label="Post engagement">
+        <div class="engagement-like-row">
+          <button type="button" class="engagement-like-button" data-like-toggle aria-pressed="false">
+            Like
+          </button>
+          <p class="engagement-like-meta"><span data-like-count>0</span> likes</p>
+        </div>
+
+        <section class="engagement-comments" aria-label="Comments">
+          <h2>Comments</h2>
+          <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
+          <ul class="engagement-comments-list" data-comments-list></ul>
+
+          <form class="engagement-comment-form" data-comment-form>
+            <label for="comment-author">Name (optional)</label>
+            <input id="comment-author" name="authorName" type="text" maxlength="60" data-comment-author />
+
+            <label for="comment-body">Comment</label>
+            <textarea
+              id="comment-body"
+              name="body"
+              rows="4"
+              maxlength="1200"
+              minlength="3"
+              required
+              data-comment-body
+            ></textarea>
+
+            <button type="submit" class="comment-submit" data-comment-submit>Post comment</button>
+          </form>
+        </section>
+      </section>
     </article>
   </section>
 
-  <script is:inline>
+  <script is:inline define:vars={{ postSlug: post.slug }}>
     (() => {
+      const runtimeApi = window.lazzerexRuntimeApi;
+      if (runtimeApi && typeof runtimeApi.postView === 'function') {
+        runtimeApi.postView(postSlug, {
+          retries: 1,
+          timeoutMs: 1800
+        });
+      }
+
+      if (runtimeApi && typeof runtimeApi.track === 'function') {
+        runtimeApi.track(
+          {
+            slug: postSlug,
+            event: 'open_detail',
+            metadata: {
+              source: 'detail_page'
+            }
+          },
+          {
+            retries: 1,
+            timeoutMs: 2000
+          }
+        );
+      }
+
+      const likeButton = document.querySelector('[data-like-toggle]');
+      const likeCountValue = document.querySelector('[data-like-count]');
+      const commentsStatus = document.querySelector('[data-comments-status]');
+      const commentsList = document.querySelector('[data-comments-list]');
+      const commentForm = document.querySelector('[data-comment-form]');
+      const commentAuthorInput = commentForm?.querySelector('[data-comment-author]');
+      const commentBodyInput = commentForm?.querySelector('[data-comment-body]');
+      const commentSubmitButton = commentForm?.querySelector('[data-comment-submit]');
+
+      const commentsDateFormatter = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      const setCommentsStatus = (text, isError = false) => {
+        if (!(commentsStatus instanceof HTMLElement)) {
+          return;
+        }
+
+        commentsStatus.textContent = text;
+        commentsStatus.classList.toggle('is-error', isError);
+      };
+
+      const visitorTokenStorageKey = 'lazzerex:visitor-token';
+      const getVisitorToken = () => {
+        const generateToken = () => {
+          if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID().replace(/-/g, '');
+          }
+
+          if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+            const bytes = new Uint8Array(16);
+            window.crypto.getRandomValues(bytes);
+            return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+          }
+
+          return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 18)}`;
+        };
+
+        try {
+          const storedToken = String(localStorage.getItem(visitorTokenStorageKey) || '').trim();
+          if (/^[a-zA-Z0-9_-]{16,128}$/.test(storedToken)) {
+            return storedToken;
+          }
+
+          const token = generateToken();
+          localStorage.setItem(visitorTokenStorageKey, token);
+          return token;
+        } catch {
+          return generateToken();
+        }
+      };
+
+      const visitorToken = getVisitorToken();
+
+      let reactionCount = 0;
+      let isLiked = false;
+      let visibleCommentCount = 0;
+
+      const updateLikeUI = () => {
+        if (!(likeButton instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        likeButton.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+        likeButton.textContent = isLiked ? 'Liked' : 'Like';
+        likeButton.classList.toggle('is-active', isLiked);
+
+        if (likeCountValue instanceof HTMLElement) {
+          likeCountValue.textContent = String(Math.max(0, reactionCount));
+        }
+      };
+
+      const updateCommentCountStatus = () => {
+        if (visibleCommentCount === 0) {
+          setCommentsStatus('No comments yet. Be the first one to add your thoughts.');
+          return;
+        }
+
+        setCommentsStatus(`${visibleCommentCount} comment${visibleCommentCount === 1 ? '' : 's'}`);
+      };
+
+      const formatCommentDate = (isoLike) => {
+        const parsedDate = new Date(String(isoLike || ''));
+        if (Number.isNaN(parsedDate.getTime())) {
+          return '';
+        }
+
+        return commentsDateFormatter.format(parsedDate);
+      };
+
+      const renderCommentItem = (comment) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'engagement-comment-item';
+
+        const header = document.createElement('p');
+        header.className = 'engagement-comment-header';
+
+        const name = document.createElement('strong');
+        name.textContent = String(comment?.authorName || 'Anonymous');
+        header.appendChild(name);
+
+        const dateText = formatCommentDate(comment?.createdAt);
+        if (dateText) {
+          const separator = document.createElement('span');
+          separator.textContent = ' • ';
+          header.appendChild(separator);
+
+          const date = document.createElement('span');
+          date.textContent = dateText;
+          header.appendChild(date);
+        }
+
+        const body = document.createElement('p');
+        body.className = 'engagement-comment-body';
+        body.textContent = String(comment?.body || '').trim();
+
+        listItem.appendChild(header);
+        listItem.appendChild(body);
+
+        return listItem;
+      };
+
+      const loadReactionState = async () => {
+        if (!runtimeApi || typeof runtimeApi.getReactions !== 'function') {
+          updateLikeUI();
+          return;
+        }
+
+        const response = await runtimeApi.getReactions(postSlug, visitorToken, { timeoutMs: 1800 });
+        if (!response) {
+          updateLikeUI();
+          return;
+        }
+
+        reactionCount = Number(response.count || 0);
+        isLiked = Boolean(response.liked);
+        updateLikeUI();
+      };
+
+      const loadComments = async () => {
+        if (!(commentsList instanceof HTMLElement)) {
+          return;
+        }
+
+        commentsList.innerHTML = '';
+
+        if (!runtimeApi || typeof runtimeApi.getComments !== 'function') {
+          setCommentsStatus('Comments are currently unavailable.', true);
+          return;
+        }
+
+        const response = await runtimeApi.getComments(postSlug, {
+          limit: 40,
+          timeoutMs: 2200
+        });
+
+        if (!response || !Array.isArray(response.comments)) {
+          setCommentsStatus('Unable to load comments right now.', true);
+          return;
+        }
+
+        visibleCommentCount = response.comments.length;
+        response.comments.forEach((comment) => {
+          const commentItem = renderCommentItem(comment);
+          if (commentItem && commentsList instanceof HTMLElement) {
+            commentsList.appendChild(commentItem);
+          }
+        });
+        updateCommentCountStatus();
+      };
+
+      if (likeButton instanceof HTMLButtonElement) {
+        updateLikeUI();
+
+        likeButton.addEventListener('click', async () => {
+          if (!runtimeApi || typeof runtimeApi.toggleReaction !== 'function') {
+            return;
+          }
+
+          likeButton.disabled = true;
+
+          const response = await runtimeApi.toggleReaction(postSlug, visitorToken, {
+            timeoutMs: 2400
+          });
+
+          if (response) {
+            reactionCount = Number(response.count || 0);
+            isLiked = Boolean(response.liked);
+            updateLikeUI();
+
+            if (typeof runtimeApi.track === 'function') {
+              runtimeApi.track(
+                {
+                  slug: postSlug,
+                  event: isLiked ? 'like' : 'unlike',
+                  metadata: {
+                    source: 'detail_page'
+                  }
+                },
+                {
+                  retries: 0,
+                  timeoutMs: 1200
+                }
+              );
+            }
+          }
+
+          likeButton.disabled = false;
+        });
+      }
+
+      if (
+        commentForm instanceof HTMLFormElement &&
+        commentBodyInput instanceof HTMLTextAreaElement &&
+        commentSubmitButton instanceof HTMLButtonElement
+      ) {
+        commentForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const commentBody = commentBodyInput.value.trim();
+          if (commentBody.length < 3) {
+            setCommentsStatus('Comment must be at least 3 characters.', true);
+            return;
+          }
+
+          if (!runtimeApi || typeof runtimeApi.postComment !== 'function') {
+            setCommentsStatus('Comments are currently unavailable.', true);
+            return;
+          }
+
+          commentSubmitButton.disabled = true;
+          setCommentsStatus('Posting your comment...');
+
+          const response = await runtimeApi.postComment(
+            {
+              slug: postSlug,
+              authorName: commentAuthorInput instanceof HTMLInputElement ? commentAuthorInput.value : '',
+              body: commentBody
+            },
+            {
+              timeoutMs: 2800
+            }
+          );
+
+          if (!response || !response.comment) {
+            setCommentsStatus('Unable to post comment right now.', true);
+            commentSubmitButton.disabled = false;
+            return;
+          }
+
+          if (commentsList instanceof HTMLElement) {
+            const newCommentItem = renderCommentItem(response.comment);
+            if (newCommentItem) {
+              commentsList.prepend(newCommentItem);
+            }
+          }
+
+          visibleCommentCount += 1;
+          updateCommentCountStatus();
+          commentBodyInput.value = '';
+
+          if (typeof runtimeApi.track === 'function') {
+            runtimeApi.track(
+              {
+                slug: postSlug,
+                event: 'comment_submit',
+                metadata: {
+                  source: 'detail_page'
+                }
+              },
+              {
+                retries: 0,
+                timeoutMs: 1200
+              }
+            );
+          }
+
+          commentSubmitButton.disabled = false;
+        });
+      }
+
+      void loadReactionState();
+      void loadComments();
+
       const toggleButton = document.querySelector('[data-glass-toggle]');
 
       if (!(toggleButton instanceof HTMLButtonElement)) {

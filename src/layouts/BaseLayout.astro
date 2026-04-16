@@ -19,6 +19,10 @@ const {
   ogImage,
   canonicalUrl
 } = Astro.props;
+
+const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
+  .trim()
+  .replace(/\/+$/, "");
 ---
 
 <!doctype html>
@@ -41,6 +45,8 @@ const {
     <meta name="twitter:description" content={description} />
     {ogImage && <meta name="twitter:image" content={ogImage} />}
 
+    <meta name="lazzerex-go-api-base-url" content={runtimeApiBaseUrl} />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -57,6 +63,230 @@ const {
         const body = document.body;
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const routeSwitchDelay = prefersReducedMotion ? 0 : 240;
+        const runtimeApiMeta = document.querySelector('meta[name="lazzerex-go-api-base-url"]');
+        const runtimeApiBaseUrl =
+          runtimeApiMeta instanceof HTMLMetaElement
+            ? runtimeApiMeta.content.trim().replace(/\/+$/, "")
+            : "";
+
+        const sleep = (delayMs) =>
+          new Promise((resolve) => {
+            window.setTimeout(resolve, delayMs);
+          });
+
+        const buildRuntimeApiUrl = (path) => {
+          const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+          if (!runtimeApiBaseUrl) {
+            return normalizedPath;
+          }
+
+          try {
+            return new URL(normalizedPath, `${runtimeApiBaseUrl}/`).toString();
+          } catch {
+            return normalizedPath;
+          }
+        };
+
+        const postRuntimeEvent = async ({
+          path,
+          payload,
+          retries = 0,
+          timeoutMs = 1500,
+          preferBeacon = false
+        }) => {
+          const requestUrl = buildRuntimeApiUrl(path);
+          const hasPayload = typeof payload !== "undefined";
+
+          if (preferBeacon && hasPayload && typeof navigator.sendBeacon === "function") {
+            try {
+              const beaconBody = new Blob([JSON.stringify(payload)], { type: "application/json" });
+              if (navigator.sendBeacon(requestUrl, beaconBody)) {
+                return;
+              }
+            } catch {
+            }
+          }
+
+          for (let attempt = 0; attempt <= retries; attempt += 1) {
+            const abortController = new AbortController();
+            const timeoutHandle = window.setTimeout(() => abortController.abort(), timeoutMs);
+
+            try {
+              const response = await fetch(requestUrl, {
+                method: "POST",
+                mode: "cors",
+                keepalive: true,
+                headers: hasPayload ? { "Content-Type": "application/json" } : undefined,
+                body: hasPayload ? JSON.stringify(payload) : undefined,
+                signal: abortController.signal
+              });
+
+              if (response.ok || response.status === 429) {
+                return;
+              }
+            } catch {
+            } finally {
+              window.clearTimeout(timeoutHandle);
+            }
+
+            if (attempt < retries) {
+              await sleep(220 * (attempt + 1));
+            }
+          }
+        };
+
+        const runInBackground = (request) => {
+          void postRuntimeEvent(request);
+        };
+
+        const requestRuntimeJson = async ({
+          method = "GET",
+          path,
+          payload,
+          timeoutMs = 2200
+        }) => {
+          const requestUrl = buildRuntimeApiUrl(path);
+          const hasPayload = typeof payload !== "undefined";
+          const abortController = new AbortController();
+          const timeoutHandle = window.setTimeout(() => abortController.abort(), timeoutMs);
+
+          try {
+            const response = await fetch(requestUrl, {
+              method,
+              mode: "cors",
+              headers: hasPayload ? { "Content-Type": "application/json" } : undefined,
+              body: hasPayload ? JSON.stringify(payload) : undefined,
+              signal: abortController.signal
+            });
+
+            if (!response.ok) {
+              return null;
+            }
+
+            const envelope = await response.json().catch(() => null);
+            if (!envelope || envelope.ok !== true) {
+              return null;
+            }
+
+            return envelope.data ?? null;
+          } catch {
+            return null;
+          } finally {
+            window.clearTimeout(timeoutHandle);
+          }
+        };
+
+        window.lazzerexRuntimeApi = {
+          postView(slug, options = {}) {
+            const normalizedSlug = String(slug || "").trim().toLowerCase();
+            if (!normalizedSlug) {
+              return;
+            }
+
+            runInBackground({
+              path: `/api/views/${encodeURIComponent(normalizedSlug)}`,
+              retries: Number(options.retries ?? 0),
+              timeoutMs: Number(options.timeoutMs ?? 1400),
+              preferBeacon: Boolean(options.preferBeacon)
+            });
+          },
+          track(eventPayload, options = {}) {
+            const slug = String(eventPayload?.slug || "").trim().toLowerCase();
+            const eventName = String(eventPayload?.event || "").trim();
+            if (!slug || !eventName) {
+              return;
+            }
+
+            const metadata =
+              eventPayload?.metadata && typeof eventPayload.metadata === "object"
+                ? eventPayload.metadata
+                : {};
+
+            runInBackground({
+              path: "/api/track",
+              payload: {
+                slug,
+                event: eventName,
+                metadata
+              },
+              retries: Number(options.retries ?? 1),
+              timeoutMs: Number(options.timeoutMs ?? 1800),
+              preferBeacon: Boolean(options.preferBeacon)
+            });
+          },
+          getReactions(slug, visitorToken, options = {}) {
+            const normalizedSlug = String(slug || "").trim().toLowerCase();
+            if (!normalizedSlug) {
+              return Promise.resolve(null);
+            }
+
+            const normalizedToken = String(visitorToken || "").trim();
+            const tokenQuery = normalizedToken
+              ? `?visitor_token=${encodeURIComponent(normalizedToken)}`
+              : "";
+
+            return requestRuntimeJson({
+              method: "GET",
+              path: `/api/reactions/${encodeURIComponent(normalizedSlug)}${tokenQuery}`,
+              timeoutMs: Number(options.timeoutMs ?? 1800)
+            });
+          },
+          toggleReaction(slug, visitorToken, options = {}) {
+            const normalizedSlug = String(slug || "").trim().toLowerCase();
+            const normalizedToken = String(visitorToken || "").trim();
+            if (!normalizedSlug || !normalizedToken) {
+              return Promise.resolve(null);
+            }
+
+            return requestRuntimeJson({
+              method: "POST",
+              path: "/api/reactions/toggle",
+              payload: {
+                slug: normalizedSlug,
+                visitorToken: normalizedToken
+              },
+              timeoutMs: Number(options.timeoutMs ?? 2200)
+            });
+          },
+          getComments(slug, options = {}) {
+            const normalizedSlug = String(slug || "").trim().toLowerCase();
+            if (!normalizedSlug) {
+              return Promise.resolve(null);
+            }
+
+            const requestedLimit = Number(options.limit ?? 20);
+            const boundedLimit = Number.isFinite(requestedLimit)
+              ? Math.max(1, Math.min(100, Math.floor(requestedLimit)))
+              : 20;
+
+            return requestRuntimeJson({
+              method: "GET",
+              path: `/api/comments/${encodeURIComponent(normalizedSlug)}?limit=${boundedLimit}`,
+              timeoutMs: Number(options.timeoutMs ?? 2200)
+            });
+          },
+          postComment(commentPayload, options = {}) {
+            const slug = String(commentPayload?.slug || "").trim().toLowerCase();
+            const authorName = String(commentPayload?.authorName || "").trim();
+            const body = String(commentPayload?.body || "").trim();
+            if (!slug || !body) {
+              return Promise.resolve(null);
+            }
+
+            return requestRuntimeJson({
+              method: "POST",
+              path: "/api/comments",
+              payload: {
+                slug,
+                authorName,
+                body
+              },
+              timeoutMs: Number(options.timeoutMs ?? 2600)
+            });
+          }
+        };
+
         const markReady = () => {
           body.classList.add("is-ready");
         };
