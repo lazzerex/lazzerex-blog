@@ -287,6 +287,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
           }
         };
 
+        window.dispatchEvent(new Event("lazzerex:runtime-api-ready"));
+
         const markReady = () => {
           body.classList.add("is-ready");
         };
