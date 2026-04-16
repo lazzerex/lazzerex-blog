@@ -73,6 +73,11 @@ type statusRecorder struct {
 	statusCode int
 }
 
+const (
+	readOperationTimeout  = 5 * time.Second
+	writeOperationTimeout = 8 * time.Second
+)
+
 func (recorder *statusRecorder) WriteHeader(statusCode int) {
 	recorder.statusCode = statusCode
 	recorder.ResponseWriter.WriteHeader(statusCode)
@@ -163,7 +168,7 @@ func (server *Server) handleViews(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), writeOperationTimeout)
 	defer cancel()
 
 	count, err := server.store.IncrementView(ctx, slug, hashIP(clientIP))
@@ -172,6 +177,12 @@ func (server *Server) handleViews(writer http.ResponseWriter, request *http.Requ
 			server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
 			return
 		}
+
+		server.logger.Error("increment view failed",
+			"slug", slug,
+			"client_ip", clientIP,
+			"error", err,
+		)
 
 		server.writeError(writer, http.StatusInternalServerError, "views_failed", "unable to increment view count")
 		return
@@ -192,7 +203,7 @@ func (server *Server) handleTrack(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), writeOperationTimeout)
 	defer cancel()
 
 	if err := server.store.RecordTrackEvent(ctx, payload, hashIP(resolveClientIP(request, server.cfg.TrustProxyHeaders))); err != nil {
@@ -202,6 +213,11 @@ func (server *Server) handleTrack(writer http.ResponseWriter, request *http.Requ
 		case errors.Is(err, store.ErrInvalidEvent):
 			server.writeError(writer, http.StatusBadRequest, "invalid_event", "event is required")
 		default:
+			server.logger.Error("track event write failed",
+				"slug", strings.TrimSpace(strings.ToLower(payload.Slug)),
+				"event", strings.TrimSpace(payload.Event),
+				"error", err,
+			)
 			server.writeError(writer, http.StatusInternalServerError, "track_failed", "unable to store analytics event")
 		}
 		return
@@ -236,7 +252,7 @@ func (server *Server) handleGetReactionState(writer http.ResponseWriter, request
 		visitorHash = hashVisitorToken(visitorToken)
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), readOperationTimeout)
 	defer cancel()
 
 	reactionState, err := server.store.GetReactionState(ctx, slug, visitorHash)
@@ -245,6 +261,12 @@ func (server *Server) handleGetReactionState(writer http.ResponseWriter, request
 			server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
 			return
 		}
+
+		server.logger.Error("read reaction state failed",
+			"slug", slug,
+			"has_visitor_hash", visitorHash != "",
+			"error", err,
+		)
 
 		server.writeError(writer, http.StatusInternalServerError, "reaction_state_failed", "unable to read reaction state")
 		return
@@ -272,7 +294,7 @@ func (server *Server) handleToggleReaction(writer http.ResponseWriter, request *
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), writeOperationTimeout)
 	defer cancel()
 
 	reactionState, err := server.store.ToggleReaction(ctx, payload.Slug, hashVisitorToken(payload.VisitorToken))
@@ -283,6 +305,11 @@ func (server *Server) handleToggleReaction(writer http.ResponseWriter, request *
 		case errors.Is(err, store.ErrInvalidVisitorToken):
 			server.writeError(writer, http.StatusBadRequest, "invalid_visitor_token", "visitor token is invalid")
 		default:
+			server.logger.Error("toggle reaction failed",
+				"slug", strings.TrimSpace(strings.ToLower(payload.Slug)),
+				"client_ip", clientIP,
+				"error", err,
+			)
 			server.writeError(writer, http.StatusInternalServerError, "reaction_toggle_failed", "unable to toggle reaction")
 		}
 		return
@@ -309,7 +336,7 @@ func (server *Server) handleGetComments(writer http.ResponseWriter, request *htt
 		limit = parsedLimit
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), readOperationTimeout)
 	defer cancel()
 
 	comments, err := server.store.ListApprovedComments(ctx, slug, limit)
@@ -318,6 +345,12 @@ func (server *Server) handleGetComments(writer http.ResponseWriter, request *htt
 			server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
 			return
 		}
+
+		server.logger.Error("list comments failed",
+			"slug", slug,
+			"limit", limit,
+			"error", err,
+		)
 
 		server.writeError(writer, http.StatusInternalServerError, "comments_read_failed", "unable to read comments")
 		return
@@ -346,7 +379,7 @@ func (server *Server) handleCreateComment(writer http.ResponseWriter, request *h
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), writeOperationTimeout)
 	defer cancel()
 
 	comment, err := server.store.CreateComment(ctx, store.CreateCommentPayload{
@@ -361,6 +394,12 @@ func (server *Server) handleCreateComment(writer http.ResponseWriter, request *h
 		case errors.Is(err, store.ErrInvalidComment):
 			server.writeError(writer, http.StatusBadRequest, "invalid_comment", "comment body must be 3-1200 characters")
 		default:
+			server.logger.Error("create comment failed",
+				"slug", strings.TrimSpace(strings.ToLower(payload.Slug)),
+				"author_present", strings.TrimSpace(payload.AuthorName) != "",
+				"client_ip", clientIP,
+				"error", err,
+			)
 			server.writeError(writer, http.StatusInternalServerError, "comment_create_failed", "unable to create comment")
 		}
 		return
