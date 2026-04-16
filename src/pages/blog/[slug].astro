@@ -165,14 +165,18 @@ const ogImage = (() => {
       }
 
       <section class="reader-engagement" aria-label="Post engagement">
-        <div class="engagement-like-row">
-          <button type="button" class="engagement-like-button" data-like-toggle aria-pressed="false">
-            Like
-          </button>
-          <p class="engagement-like-meta"><span data-like-count>0</span> likes</p>
-        </div>
+        <section class="engagement-reaction-panel" aria-label="Post reactions">
+          <h2>Post Reactions</h2>
+          <div class="engagement-like-row">
+            <button type="button" class="engagement-like-button" data-like-toggle aria-pressed="false">
+              Like Post
+            </button>
+            <p class="engagement-like-meta"><span data-like-count>0</span> likes</p>
+          </div>
+          <p class="engagement-like-status" data-like-status aria-live="polite"></p>
+        </section>
 
-        <section class="engagement-comments" aria-label="Comments">
+        <section class="engagement-comments engagement-comments-panel" aria-label="Comments">
           <h2>Comments</h2>
           <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
           <ul class="engagement-comments-list" data-comments-list></ul>
@@ -201,32 +205,19 @@ const ogImage = (() => {
 
   <script is:inline define:vars={{ postSlug: post.slug }}>
     (() => {
-      const runtimeApi = window.lazzerexRuntimeApi;
-      if (runtimeApi && typeof runtimeApi.postView === 'function') {
-        runtimeApi.postView(postSlug, {
-          retries: 1,
-          timeoutMs: 1800
-        });
-      }
+      const runtimeReadyEvent = 'lazzerex:runtime-api-ready';
+      const getRuntimeApi = () => {
+        const candidate = window.lazzerexRuntimeApi;
+        if (candidate && typeof candidate === 'object') {
+          return candidate;
+        }
 
-      if (runtimeApi && typeof runtimeApi.track === 'function') {
-        runtimeApi.track(
-          {
-            slug: postSlug,
-            event: 'open_detail',
-            metadata: {
-              source: 'detail_page'
-            }
-          },
-          {
-            retries: 1,
-            timeoutMs: 2000
-          }
-        );
-      }
+        return null;
+      };
 
       const likeButton = document.querySelector('[data-like-toggle]');
       const likeCountValue = document.querySelector('[data-like-count]');
+      const likeStatus = document.querySelector('[data-like-status]');
       const commentsStatus = document.querySelector('[data-comments-status]');
       const commentsList = document.querySelector('[data-comments-list]');
       const commentForm = document.querySelector('[data-comment-form]');
@@ -247,6 +238,40 @@ const ogImage = (() => {
 
         commentsStatus.textContent = text;
         commentsStatus.classList.toggle('is-error', isError);
+      };
+
+      const setLikeStatus = (text, isError = false) => {
+        if (!(likeStatus instanceof HTMLElement)) {
+          return;
+        }
+
+        likeStatus.textContent = text;
+        likeStatus.classList.toggle('is-error', isError);
+      };
+
+      const setEngagementPendingState = () => {
+        if (likeButton instanceof HTMLButtonElement) {
+          likeButton.disabled = true;
+        }
+
+        if (commentSubmitButton instanceof HTMLButtonElement) {
+          commentSubmitButton.disabled = true;
+        }
+
+        setLikeStatus('Connecting to engagement service...');
+        setCommentsStatus('Connecting to comments service...');
+      };
+
+      const setEngagementReadyState = () => {
+        if (likeButton instanceof HTMLButtonElement) {
+          likeButton.disabled = false;
+        }
+
+        if (commentSubmitButton instanceof HTMLButtonElement) {
+          commentSubmitButton.disabled = false;
+        }
+
+        setLikeStatus('');
       };
 
       const visitorTokenStorageKey = 'lazzerex:visitor-token';
@@ -291,7 +316,7 @@ const ogImage = (() => {
         }
 
         likeButton.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
-        likeButton.textContent = isLiked ? 'Liked' : 'Like';
+        likeButton.textContent = isLiked ? 'Liked Post' : 'Like Post';
         likeButton.classList.toggle('is-active', isLiked);
 
         if (likeCountValue instanceof HTMLElement) {
@@ -350,6 +375,7 @@ const ogImage = (() => {
       };
 
       const loadReactionState = async () => {
+        const runtimeApi = getRuntimeApi();
         if (!runtimeApi || typeof runtimeApi.getReactions !== 'function') {
           updateLikeUI();
           return;
@@ -358,12 +384,14 @@ const ogImage = (() => {
         const response = await runtimeApi.getReactions(postSlug, visitorToken, { timeoutMs: 1800 });
         if (!response) {
           updateLikeUI();
+          setLikeStatus('Unable to load post reaction right now.', true);
           return;
         }
 
         reactionCount = Number(response.count || 0);
         isLiked = Boolean(response.liked);
         updateLikeUI();
+        setLikeStatus('');
       };
 
       const loadComments = async () => {
@@ -373,6 +401,7 @@ const ogImage = (() => {
 
         commentsList.innerHTML = '';
 
+        const runtimeApi = getRuntimeApi();
         if (!runtimeApi || typeof runtimeApi.getComments !== 'function') {
           setCommentsStatus('Comments are currently unavailable.', true);
           return;
@@ -402,11 +431,14 @@ const ogImage = (() => {
         updateLikeUI();
 
         likeButton.addEventListener('click', async () => {
+          const runtimeApi = getRuntimeApi();
           if (!runtimeApi || typeof runtimeApi.toggleReaction !== 'function') {
+            setLikeStatus('Post reactions are currently unavailable.', true);
             return;
           }
 
           likeButton.disabled = true;
+          setLikeStatus('Updating post reaction...');
 
           const response = await runtimeApi.toggleReaction(postSlug, visitorToken, {
             timeoutMs: 2400
@@ -416,6 +448,7 @@ const ogImage = (() => {
             reactionCount = Number(response.count || 0);
             isLiked = Boolean(response.liked);
             updateLikeUI();
+            setLikeStatus('');
 
             if (typeof runtimeApi.track === 'function') {
               runtimeApi.track(
@@ -432,6 +465,8 @@ const ogImage = (() => {
                 }
               );
             }
+          } else {
+            setLikeStatus('Unable to update post reaction right now.', true);
           }
 
           likeButton.disabled = false;
@@ -452,6 +487,7 @@ const ogImage = (() => {
             return;
           }
 
+          const runtimeApi = getRuntimeApi();
           if (!runtimeApi || typeof runtimeApi.postComment !== 'function') {
             setCommentsStatus('Comments are currently unavailable.', true);
             return;
@@ -508,8 +544,56 @@ const ogImage = (() => {
         });
       }
 
-      void loadReactionState();
-      void loadComments();
+      setEngagementPendingState();
+
+      const runtimeWaitHandle = window.setTimeout(() => {
+        if (!getRuntimeApi()) {
+          setLikeStatus('Post reactions are currently unavailable.', true);
+          setCommentsStatus('Comments are currently unavailable.', true);
+        }
+      }, 5000);
+
+      const initializeEngagement = () => {
+        if (!getRuntimeApi()) {
+          return;
+        }
+
+        window.clearTimeout(runtimeWaitHandle);
+        setEngagementReadyState();
+
+        const runtimeApi = getRuntimeApi();
+        if (runtimeApi && typeof runtimeApi.postView === 'function') {
+          runtimeApi.postView(postSlug, {
+            retries: 1,
+            timeoutMs: 1800
+          });
+        }
+
+        if (runtimeApi && typeof runtimeApi.track === 'function') {
+          runtimeApi.track(
+            {
+              slug: postSlug,
+              event: 'open_detail',
+              metadata: {
+                source: 'detail_page'
+              }
+            },
+            {
+              retries: 1,
+              timeoutMs: 2000
+            }
+          );
+        }
+
+        void loadReactionState();
+        void loadComments();
+      };
+
+      if (getRuntimeApi()) {
+        initializeEngagement();
+      } else {
+        window.addEventListener(runtimeReadyEvent, initializeEngagement, { once: true });
+      }
 
       const toggleButton = document.querySelector('[data-glass-toggle]');
 
