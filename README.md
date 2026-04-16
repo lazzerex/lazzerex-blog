@@ -9,6 +9,8 @@
   <img src="https://img.shields.io/badge/Lucide-Icons-f97316?style=flat"/>
   <img src="https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white"/>
   <img src="https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Neon-00E599?style=flat"/>
   <img src="https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white"/>
   <img src="https://img.shields.io/badge/Rendering-Static%20Site-1f6feb?style=flat"/>
 </p>
@@ -27,13 +29,10 @@ The personal part is simple: this is where I publish my learning journey.
 - Content source: Notion API (`@notionhq/client`)
 - Icons: Lucide (`@lucide/astro`, `lucide-astro`)
 - Runtime/tooling: Node.js 20+, npm
+- API service: Go 1.22+
+- Runtime persistence: SQLite (default) or PostgreSQL (Neon-ready)
 - Deployment: Vercel
 - Rendering model: static site generation (SSG)
-
-### Next Stack (Planned)
-
-- API service: Go
-- Local persistence and analytics foundation: SQLite
 
 ## Technical Highlights
 
@@ -79,6 +78,7 @@ Create `.env` in the project root:
 ```env
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PUBLIC_GO_API_BASE_URL=http://localhost:8080
 ```
 
 Optional alias (kept for compatibility):
@@ -99,7 +99,32 @@ npm run dev
 npm run build
 ```
 
-### 5. Preview production output
+### 5. Run Go API locally (optional but recommended)
+
+```bash
+go run ./cmd/server
+```
+
+Default local CORS allows Astro dev origins on port `4321`.
+
+Relevant backend environment variables:
+
+```env
+GO_API_ADDRESS=:8080
+GO_API_DB_DRIVER=sqlite
+GO_API_DB_PATH=data/lazzerex.sqlite
+GO_API_DATABASE_URL=
+GO_API_ALLOWED_ORIGINS=http://localhost:4321,http://127.0.0.1:4321
+```
+
+For PostgreSQL/Neon, set:
+
+```env
+GO_API_DB_DRIVER=postgres
+GO_API_DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
+```
+
+### 6. Preview production output
 
 ```bash
 npm run preview
@@ -134,6 +159,26 @@ Core libraries:
 - Required env vars in Vercel:
   - `NOTION_TOKEN`
   - `NOTION_DATABASE_ID`
+  - `PUBLIC_GO_API_BASE_URL` (for example your Go service URL)
+
+### Render + Neon deployment (Go API)
+
+1. Create a Neon database and copy the connection string.
+2. Create a new Render Web Service from this repository.
+3. In Render service settings, use:
+  - Build command: `go build -o bin/server ./cmd/server`
+  - Start command: `./bin/server`
+4. Add Render environment variables:
+  - `GO_API_DB_DRIVER=postgres`
+  - `GO_API_DATABASE_URL=<your-neon-connection-string>`
+  - `GO_API_ALLOWED_ORIGINS=https://lazzerex-blog.vercel.app`
+  - Optional: `GO_API_LOG_LEVEL=info`
+5. Set frontend env (`PUBLIC_GO_API_BASE_URL`) in Vercel to the Render URL.
+
+Notes:
+- The API auto-binds to Render's `PORT` if `GO_API_ADDRESS` is not set.
+- Keep Neon SSL enabled (`sslmode=require`) for production.
+- Keep SQLite for local development unless you explicitly want local Postgres testing.
 
 ## Documentation
 
