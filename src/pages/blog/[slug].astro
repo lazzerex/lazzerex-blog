@@ -166,6 +166,7 @@ const ogImage = (() => {
 
       <section class="reader-engagement" aria-label="Post engagement">
         <section class="engagement-reaction-panel" aria-label="Post reactions">
+          <p class="engagement-panel-kicker">This article</p>
           <h2>Post Reactions</h2>
           <div class="engagement-like-row">
             <button type="button" class="engagement-like-button" data-like-toggle aria-pressed="false">
@@ -177,9 +178,17 @@ const ogImage = (() => {
         </section>
 
         <section class="engagement-comments engagement-comments-panel" aria-label="Comments">
-          <h2>Comments</h2>
-          <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
+          <div class="engagement-comments-header">
+            <h2>Comments</h2>
+            <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
+          </div>
           <ul class="engagement-comments-list" data-comments-list></ul>
+        </section>
+
+        <section class="engagement-compose-panel" aria-label="Write a comment">
+          <p class="engagement-panel-kicker">Join the conversation</p>
+          <h2>Write a Comment</h2>
+          <p class="engagement-compose-note">Share your thought about this article.</p>
 
           <form class="engagement-comment-form" data-comment-form>
             <label for="comment-author">Name (optional)</label>
@@ -196,7 +205,10 @@ const ogImage = (() => {
               data-comment-body
             ></textarea>
 
-            <button type="submit" class="comment-submit" data-comment-submit>Post comment</button>
+            <div class="engagement-compose-actions">
+              <p class="engagement-compose-status" data-comment-compose-status aria-live="polite"></p>
+              <button type="submit" class="comment-submit" data-comment-submit>Post Comment</button>
+            </div>
           </form>
         </section>
       </section>
@@ -219,6 +231,7 @@ const ogImage = (() => {
       const likeCountValue = document.querySelector('[data-like-count]');
       const likeStatus = document.querySelector('[data-like-status]');
       const commentsStatus = document.querySelector('[data-comments-status]');
+      const composeStatus = document.querySelector('[data-comment-compose-status]');
       const commentsList = document.querySelector('[data-comments-list]');
       const commentForm = document.querySelector('[data-comment-form]');
       const commentAuthorInput = commentForm?.querySelector('[data-comment-author]');
@@ -249,6 +262,15 @@ const ogImage = (() => {
         likeStatus.classList.toggle('is-error', isError);
       };
 
+      const setComposeStatus = (text, isError = false) => {
+        if (!(composeStatus instanceof HTMLElement)) {
+          return;
+        }
+
+        composeStatus.textContent = text;
+        composeStatus.classList.toggle('is-error', isError);
+      };
+
       const setEngagementPendingState = () => {
         if (likeButton instanceof HTMLButtonElement) {
           likeButton.disabled = true;
@@ -260,6 +282,7 @@ const ogImage = (() => {
 
         setLikeStatus('Connecting to engagement service...');
         setCommentsStatus('Connecting to comments service...');
+        setComposeStatus('Connecting to comment service...');
       };
 
       const setEngagementReadyState = () => {
@@ -272,6 +295,7 @@ const ogImage = (() => {
         }
 
         setLikeStatus('');
+        setComposeStatus('');
       };
 
       const visitorTokenStorageKey = 'lazzerex:visitor-token';
@@ -483,18 +507,18 @@ const ogImage = (() => {
 
           const commentBody = commentBodyInput.value.trim();
           if (commentBody.length < 3) {
-            setCommentsStatus('Comment must be at least 3 characters.', true);
+            setComposeStatus('Comment must be at least 3 characters.', true);
             return;
           }
 
           const runtimeApi = getRuntimeApi();
           if (!runtimeApi || typeof runtimeApi.postComment !== 'function') {
-            setCommentsStatus('Comments are currently unavailable.', true);
+            setComposeStatus('Comments are currently unavailable.', true);
             return;
           }
 
           commentSubmitButton.disabled = true;
-          setCommentsStatus('Posting your comment...');
+          setComposeStatus('Posting your comment...');
 
           const response = await runtimeApi.postComment(
             {
@@ -508,7 +532,7 @@ const ogImage = (() => {
           );
 
           if (!response || !response.comment) {
-            setCommentsStatus('Unable to post comment right now.', true);
+            setComposeStatus('Unable to post comment right now.', true);
             commentSubmitButton.disabled = false;
             return;
           }
@@ -523,6 +547,7 @@ const ogImage = (() => {
           visibleCommentCount += 1;
           updateCommentCountStatus();
           commentBodyInput.value = '';
+          setComposeStatus('Comment posted.', false);
 
           if (typeof runtimeApi.track === 'function') {
             runtimeApi.track(
@@ -550,6 +575,7 @@ const ogImage = (() => {
         if (!getRuntimeApi()) {
           setLikeStatus('Post reactions are currently unavailable.', true);
           setCommentsStatus('Comments are currently unavailable.', true);
+          setComposeStatus('Comment service is currently unavailable.', true);
         }
       }, 5000);
 
