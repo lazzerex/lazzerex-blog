@@ -7,6 +7,10 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
 const DEFAULT_COVER = "/images/folder-bg.jfif";
 const DEFAULT_AUTHOR = "H. S. N. Bình";
+const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
+  .trim()
+  .replace(/\/+$/, "");
+const publishSyncSecret = String(import.meta.env.GO_API_PUBLISH_SYNC_SECRET || "").trim();
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -33,6 +37,7 @@ export interface ReaderPost extends ExplorerPost {
 }
 
 let cachedPosts: ReaderPost[] | null = null;
+let publishedPostsSyncAttempted = false;
 
 function validateReaderPostSlugs(posts: ReaderPost[], source: string): void {
   const errors: string[] = [];
@@ -101,6 +106,48 @@ function assertNotionConfig(): void {
   throw new Error("[Phase 3] Missing Notion configuration. Set NOTION_TOKEN (or NOTION_API_KEY) and NOTION_DATABASE_ID.");
 }
 
+async function syncPublishedPosts(posts: ReaderPost[]): Promise<void> {
+  if (publishedPostsSyncAttempted) {
+    return;
+  }
+
+  publishedPostsSyncAttempted = true;
+
+  if (!runtimeApiBaseUrl || posts.length === 0) {
+    return;
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+
+  if (publishSyncSecret) {
+    headers["X-Lazzerex-Publish-Secret"] = publishSyncSecret;
+  }
+
+  for (const post of posts) {
+    try {
+      const response = await fetch(`${runtimeApiBaseUrl}/api/blogs/published`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          slug: post.slug,
+          title: post.title,
+          summary: post.summary
+        })
+      });
+
+      if (!response.ok) {
+        console.warn(
+          `[Phase 6] Published-post sync returned ${response.status} for slug "${post.slug}".`
+        );
+      }
+    } catch (error) {
+      console.warn(`[Phase 6] Published-post sync failed for slug "${post.slug}".`, error);
+    }
+  }
+}
+
 export async function getAllPosts(forceRefresh = false): Promise<ReaderPost[]> {
   if (cachedPosts && !forceRefresh) {
     return cachedPosts;
@@ -115,6 +162,8 @@ export async function getAllPosts(forceRefresh = false): Promise<ReaderPost[]> {
   validateReaderPostSlugs(posts, "Notion");
 
   posts.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  await syncPublishedPosts(posts);
 
   cachedPosts = posts;
   return posts;
