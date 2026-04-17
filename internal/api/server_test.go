@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 
 	"lazzerex-blog/internal/config"
 	"lazzerex-blog/internal/db"
+	"lazzerex-blog/internal/discord"
 	"lazzerex-blog/internal/store"
 )
 
@@ -63,6 +65,49 @@ func TestViewsEndpointRateLimit(t *testing.T) {
 	server.Handler().ServeHTTP(responseTwo, requestTwo)
 	if responseTwo.Code != http.StatusTooManyRequests {
 		t.Fatalf("expected second views request status 429, got %d", responseTwo.Code)
+	}
+}
+
+func TestGetViewsEndpointReturnsCount(t *testing.T) {
+	server, cleanup := newTestServer(t, 5)
+	defer cleanup()
+
+	requestOne := httptest.NewRequest(http.MethodPost, "/api/views/sample-post", nil)
+	requestOne.RemoteAddr = "10.10.10.10:1234"
+	recorderOne := httptest.NewRecorder()
+	server.Handler().ServeHTTP(recorderOne, requestOne)
+	if recorderOne.Code != http.StatusOK {
+		t.Fatalf("expected first post view request status 200, got %d", recorderOne.Code)
+	}
+
+	requestTwo := httptest.NewRequest(http.MethodPost, "/api/views/sample-post", nil)
+	requestTwo.RemoteAddr = "10.10.10.11:4321"
+	recorderTwo := httptest.NewRecorder()
+	server.Handler().ServeHTTP(recorderTwo, requestTwo)
+	if recorderTwo.Code != http.StatusOK {
+		t.Fatalf("expected second post view request status 200, got %d", recorderTwo.Code)
+	}
+
+	requestRead := httptest.NewRequest(http.MethodGet, "/api/views/sample-post", nil)
+	recorderRead := httptest.NewRecorder()
+	server.Handler().ServeHTTP(recorderRead, requestRead)
+	if recorderRead.Code != http.StatusOK {
+		t.Fatalf("expected get view count status 200, got %d", recorderRead.Code)
+	}
+
+	var payload struct {
+		OK   bool `json:"ok"`
+		Data struct {
+			Slug  string `json:"slug"`
+			Count int64  `json:"count"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(recorderRead.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode get view count payload: %v", err)
+	}
+
+	if !payload.OK || payload.Data.Count != 2 {
+		t.Fatalf("expected view count to be 2, got %+v", payload.Data)
 	}
 }
 
@@ -226,12 +271,144 @@ func TestCommentsCreateAndList(t *testing.T) {
 	}
 }
 
+func TestPublishedPostSyncSendsOneDiscordNotification(t *testing.T) {
+	webhookBodies := make(chan string, 4)
+	webhookServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		webhookBodies <- string(body)
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	defer webhookServer.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	notifier := discord.NewNotifier(webhookServer.URL, 2*time.Second, logger)
+
+	server, cleanup := newTestServerWithNotifier(t, 5, notifier, "sync-secret")
+	defer cleanup()
+
+	body := bytes.NewBufferString(`{"slug":"sample-post","title":"Sample Post","summary":"A short summary."}`)
+	request := httptest.NewRequest(http.MethodPost, "/api/blogs/published", body)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-Lazzerex-Publish-Secret", "sync-secret")
+	recorder := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected first publish sync to return 200, got %d", recorder.Code)
+	}
+
+	firstBody := waitForWebhookBody(t, webhookBodies, "published post notification")
+	if !strings.Contains(firstBody, "Sample Post") || !strings.Contains(firstBody, "A short summary.") {
+		t.Fatalf("expected publish notification to include title and summary, got %s", firstBody)
+	}
+
+	bodySecond := bytes.NewBufferString(`{"slug":"sample-post","title":"Sample Post","summary":"A short summary."}`)
+	requestSecond := httptest.NewRequest(http.MethodPost, "/api/blogs/published", bodySecond)
+	requestSecond.Header.Set("Content-Type", "application/json")
+	requestSecond.Header.Set("X-Lazzerex-Publish-Secret", "sync-secret")
+	recorderSecond := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(recorderSecond, requestSecond)
+	if recorderSecond.Code != http.StatusOK {
+		t.Fatalf("expected second publish sync to return 200, got %d", recorderSecond.Code)
+	}
+
+	ensureNoWebhookBody(t, webhookBodies, "duplicate published post notification")
+}
+
+func TestLikeAndCommentSendDiscordNotifications(t *testing.T) {
+	webhookBodies := make(chan string, 8)
+	webhookServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		body, _ := io.ReadAll(request.Body)
+		webhookBodies <- string(body)
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	defer webhookServer.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	notifier := discord.NewNotifier(webhookServer.URL, 2*time.Second, logger)
+
+	server, cleanup := newTestServerWithNotifier(t, 5, notifier, "")
+	defer cleanup()
+
+	likeBody := bytes.NewBufferString(`{"slug":"sample-post","visitorToken":"visitor_token_1234567890","postTitle":"Sample Post"}`)
+	likeRequest := httptest.NewRequest(http.MethodPost, "/api/reactions/toggle", likeBody)
+	likeRequest.Header.Set("Content-Type", "application/json")
+	likeRecorder := httptest.NewRecorder()
+	server.Handler().ServeHTTP(likeRecorder, likeRequest)
+	if likeRecorder.Code != http.StatusOK {
+		t.Fatalf("expected like toggle to return 200, got %d", likeRecorder.Code)
+	}
+
+	likeWebhook := waitForWebhookBody(t, webhookBodies, "like notification")
+	if !strings.Contains(likeWebhook, "Sample Post") || !strings.Contains(likeWebhook, "New Like") {
+		t.Fatalf("expected like notification payload to include post title and event label, got %s", likeWebhook)
+	}
+
+	unlikeBody := bytes.NewBufferString(`{"slug":"sample-post","visitorToken":"visitor_token_1234567890","postTitle":"Sample Post"}`)
+	unlikeRequest := httptest.NewRequest(http.MethodPost, "/api/reactions/toggle", unlikeBody)
+	unlikeRequest.Header.Set("Content-Type", "application/json")
+	unlikeRecorder := httptest.NewRecorder()
+	server.Handler().ServeHTTP(unlikeRecorder, unlikeRequest)
+	if unlikeRecorder.Code != http.StatusOK {
+		t.Fatalf("expected unlike toggle to return 200, got %d", unlikeRecorder.Code)
+	}
+
+	ensureNoWebhookBody(t, webhookBodies, "unlike notification")
+
+	commentBody := bytes.NewBufferString(`{"slug":"sample-post","authorName":"Reader","body":"Great write-up on this topic.","postTitle":"Sample Post"}`)
+	commentRequest := httptest.NewRequest(http.MethodPost, "/api/comments", commentBody)
+	commentRequest.Header.Set("Content-Type", "application/json")
+	commentRecorder := httptest.NewRecorder()
+	server.Handler().ServeHTTP(commentRecorder, commentRequest)
+	if commentRecorder.Code != http.StatusCreated {
+		t.Fatalf("expected comment create to return 201, got %d", commentRecorder.Code)
+	}
+
+	commentWebhook := waitForWebhookBody(t, webhookBodies, "comment notification")
+	if !strings.Contains(commentWebhook, "Sample Post") || !strings.Contains(commentWebhook, "Reader") || !strings.Contains(commentWebhook, "Great write-up on this topic.") {
+		t.Fatalf("expected comment notification payload to include post/comment context, got %s", commentWebhook)
+	}
+}
+
+func waitForWebhookBody(t *testing.T, webhookBodies <-chan string, label string) string {
+	t.Helper()
+
+	select {
+	case body := <-webhookBodies:
+		return body
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timed out waiting for %s", label)
+		return ""
+	}
+}
+
+func ensureNoWebhookBody(t *testing.T, webhookBodies <-chan string, label string) {
+	t.Helper()
+
+	select {
+	case body := <-webhookBodies:
+		t.Fatalf("expected no webhook for %s, got payload %s", label, body)
+	case <-time.After(250 * time.Millisecond):
+		return
+	}
+}
+
 func newTestServer(t *testing.T, rateLimit int) (*Server, func()) {
-	server, _, cleanup := newTestServerWithDB(t, rateLimit)
+	server, _, cleanup := newTestServerWithDependencies(t, rateLimit, nil, "")
 	return server, cleanup
 }
 
 func newTestServerWithDB(t *testing.T, rateLimit int) (*Server, *sql.DB, func()) {
+	return newTestServerWithDependencies(t, rateLimit, nil, "")
+}
+
+func newTestServerWithNotifier(t *testing.T, rateLimit int, notifier *discord.Notifier, publishSyncSecret string) (*Server, func()) {
+	server, _, cleanup := newTestServerWithDependencies(t, rateLimit, notifier, publishSyncSecret)
+	return server, cleanup
+}
+
+func newTestServerWithDependencies(t *testing.T, rateLimit int, notifier *discord.Notifier, publishSyncSecret string) (*Server, *sql.DB, func()) {
 	t.Helper()
 
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -257,11 +434,13 @@ func newTestServerWithDB(t *testing.T, rateLimit int) (*Server, *sql.DB, func())
 		LogLevel:              slog.LevelInfo,
 		ViewsRateLimit:        rateLimit,
 		ViewsRateWindow:       time.Minute,
+		DiscordRequestTimeout: time.Second,
+		PublishSyncSecret:     publishSyncSecret,
 		ShutdownTimeout:       3 * time.Second,
 		RequestBodyLimitBytes: 64 * 1024,
 		TrustProxyHeaders:     false,
 		AllowedOrigins:        []string{"http://localhost:4321", "http://127.0.0.1:4321"},
-	}, logger, storeLayer)
+	}, logger, storeLayer, notifier)
 
 	cleanup := func() {
 		dbConn.Close()
