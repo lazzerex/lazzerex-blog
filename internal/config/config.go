@@ -16,6 +16,9 @@ type Config struct {
 	DBPath                string
 	DatabaseURL           string
 	LogLevel              slog.Level
+	DiscordWebhookURL     string
+	DiscordRequestTimeout time.Duration
+	PublishSyncSecret     string
 	ViewsRateLimit        int
 	ViewsRateWindow       time.Duration
 	ShutdownTimeout       time.Duration
@@ -30,6 +33,9 @@ func Load() (Config, error) {
 		DBDriver:              strings.ToLower(getEnv("GO_API_DB_DRIVER", "sqlite")),
 		DBPath:                getEnv("GO_API_DB_PATH", "data/lazzerex.sqlite"),
 		DatabaseURL:           getEnv("GO_API_DATABASE_URL", ""),
+		DiscordWebhookURL:     getEnv("GO_API_DISCORD_WEBHOOK_URL", ""),
+		DiscordRequestTimeout: 4 * time.Second,
+		PublishSyncSecret:     getEnv("GO_API_PUBLISH_SYNC_SECRET", ""),
 		ViewsRateLimit:        30,
 		ViewsRateWindow:       time.Minute,
 		ShutdownTimeout:       10 * time.Second,
@@ -65,6 +71,12 @@ func Load() (Config, error) {
 		cfg.ShutdownTimeout = value
 	}
 
+	if value, err := getEnvDuration("GO_API_DISCORD_REQUEST_TIMEOUT", cfg.DiscordRequestTimeout); err != nil {
+		return cfg, err
+	} else {
+		cfg.DiscordRequestTimeout = value
+	}
+
 	if value, err := getEnvInt64("GO_API_REQUEST_BODY_LIMIT_BYTES", cfg.RequestBodyLimitBytes); err != nil {
 		return cfg, err
 	} else {
@@ -81,6 +93,10 @@ func Load() (Config, error) {
 
 	if cfg.ShutdownTimeout <= 0 {
 		return cfg, fmt.Errorf("GO_API_SHUTDOWN_TIMEOUT must be > 0")
+	}
+
+	if cfg.DiscordRequestTimeout <= 0 {
+		return cfg, fmt.Errorf("GO_API_DISCORD_REQUEST_TIMEOUT must be > 0")
 	}
 
 	if cfg.RequestBodyLimitBytes <= 0 {
