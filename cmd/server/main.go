@@ -20,6 +20,7 @@ import (
 	"lazzerex-blog/internal/api"
 	"lazzerex-blog/internal/config"
 	"lazzerex-blog/internal/db"
+	"lazzerex-blog/internal/discord"
 	"lazzerex-blog/internal/logging"
 	"lazzerex-blog/internal/store"
 )
@@ -54,7 +55,8 @@ func run() error {
 	}
 
 	storeLayer := store.New(dbConn, logger, cfg.DBDriver)
-	server := api.NewServer(cfg, logger, storeLayer)
+	discordNotifier := discord.NewNotifier(cfg.DiscordWebhookURL, cfg.DiscordRequestTimeout, logger)
+	server := api.NewServer(cfg, logger, storeLayer, discordNotifier)
 
 	httpServer := &http.Server{
 		Addr:              cfg.Address,
