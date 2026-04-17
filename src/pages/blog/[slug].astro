@@ -67,6 +67,8 @@ const ogImage = (() => {
           <span>{post.author}</span>
           <span class="reader-meta-dot" aria-hidden="true">•</span>
           <time datetime={post.date.toISOString()}>{post.dateLabel}</time>
+          <span class="reader-meta-dot" aria-hidden="true">•</span>
+          <span><span data-view-count>--</span> views</span>
         </p>
         <ul class="reader-tags" aria-label="Post tags">
           {
@@ -215,7 +217,7 @@ const ogImage = (() => {
     </article>
   </section>
 
-  <script is:inline define:vars={{ postSlug: post.slug }}>
+  <script is:inline define:vars={{ postSlug: post.slug, postTitle: post.title }}>
     (() => {
       const runtimeReadyEvent = 'lazzerex:runtime-api-ready';
       const getRuntimeApi = () => {
@@ -228,6 +230,7 @@ const ogImage = (() => {
       };
 
       const likeButton = document.querySelector('[data-like-toggle]');
+      const viewCountValue = document.querySelector('[data-view-count]');
       const likeCountValue = document.querySelector('[data-like-count]');
       const likeStatus = document.querySelector('[data-like-status]');
       const commentsStatus = document.querySelector('[data-comments-status]');
@@ -333,6 +336,20 @@ const ogImage = (() => {
       let reactionCount = 0;
       let isLiked = false;
       let visibleCommentCount = 0;
+
+      const updateViewCountUI = (count) => {
+        if (!(viewCountValue instanceof HTMLElement)) {
+          return;
+        }
+
+        const normalizedCount = Number(count);
+        if (!Number.isFinite(normalizedCount) || normalizedCount < 0) {
+          viewCountValue.textContent = '--';
+          return;
+        }
+
+        viewCountValue.textContent = String(Math.floor(normalizedCount));
+      };
 
       const updateLikeUI = () => {
         if (!(likeButton instanceof HTMLButtonElement)) {
@@ -451,6 +468,44 @@ const ogImage = (() => {
         updateCommentCountStatus();
       };
 
+      const loadAndIncrementViews = async () => {
+        const runtimeApi = getRuntimeApi();
+        if (!runtimeApi) {
+          return;
+        }
+
+        if (typeof runtimeApi.getViews === 'function') {
+          const currentViewState = await runtimeApi.getViews(postSlug, {
+            timeoutMs: 1800
+          });
+
+          if (currentViewState) {
+            updateViewCountUI(currentViewState.count);
+          }
+        }
+
+        if (typeof runtimeApi.incrementView === 'function') {
+          const incrementedViewState = await runtimeApi.incrementView(postSlug, {
+            timeoutMs: 1900
+          });
+
+          if (incrementedViewState) {
+            updateViewCountUI(incrementedViewState.count);
+            return;
+          }
+        }
+
+        if (typeof runtimeApi.getViews === 'function') {
+          const fallbackViewState = await runtimeApi.getViews(postSlug, {
+            timeoutMs: 1800
+          });
+
+          if (fallbackViewState) {
+            updateViewCountUI(fallbackViewState.count);
+          }
+        }
+      };
+
       if (likeButton instanceof HTMLButtonElement) {
         updateLikeUI();
 
@@ -465,6 +520,7 @@ const ogImage = (() => {
           setLikeStatus('Updating post reaction...');
 
           const response = await runtimeApi.toggleReaction(postSlug, visitorToken, {
+            postTitle,
             timeoutMs: 2400
           });
 
@@ -524,7 +580,8 @@ const ogImage = (() => {
             {
               slug: postSlug,
               authorName: commentAuthorInput instanceof HTMLInputElement ? commentAuthorInput.value : '',
-              body: commentBody
+              body: commentBody,
+              postTitle
             },
             {
               timeoutMs: 2800
@@ -587,14 +644,9 @@ const ogImage = (() => {
         window.clearTimeout(runtimeWaitHandle);
         setEngagementReadyState();
 
-        const runtimeApi = getRuntimeApi();
-        if (runtimeApi && typeof runtimeApi.postView === 'function') {
-          runtimeApi.postView(postSlug, {
-            retries: 1,
-            timeoutMs: 1800
-          });
-        }
+        void loadAndIncrementViews();
 
+        const runtimeApi = getRuntimeApi();
         if (runtimeApi && typeof runtimeApi.track === 'function') {
           runtimeApi.track(
             {
