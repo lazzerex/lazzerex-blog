@@ -79,6 +79,7 @@ Create `.env` in the project root:
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxxxxx
 NOTION_DATABASE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 PUBLIC_GO_API_BASE_URL=http://localhost:8080
+GO_API_PUBLISH_SYNC_SECRET=replace-with-long-random-string
 ```
 
 Optional alias (kept for compatibility):
@@ -86,6 +87,8 @@ Optional alias (kept for compatibility):
 ```env
 NOTION_API_KEY=secret_xxxxxxxxxxxxxxxxxxxxxxxxx
 ```
+
+`GO_API_PUBLISH_SYNC_SECRET` is read at Astro build time (server-side only) and sent to the Go API during published-post sync.
 
 ### 3. Run locally
 
@@ -115,6 +118,9 @@ GO_API_DB_DRIVER=sqlite
 GO_API_DB_PATH=data/lazzerex.sqlite
 GO_API_DATABASE_URL=
 GO_API_ALLOWED_ORIGINS=http://localhost:4321,http://127.0.0.1:4321
+GO_API_DISCORD_WEBHOOK_URL=
+GO_API_DISCORD_REQUEST_TIMEOUT=4s
+GO_API_PUBLISH_SYNC_SECRET=replace-with-long-random-string
 ```
 
 For PostgreSQL/Neon, set:
@@ -179,6 +185,11 @@ Notes:
 - The API auto-binds to Render's `PORT` if `GO_API_ADDRESS` is not set.
 - Keep Neon SSL enabled (`sslmode=require`) for production.
 - Keep SQLite for local development unless you explicitly want local Postgres testing.
+
+Discord notifications are triggered for:
+- New likes (includes blog slug/title and total likes)
+- New comments (includes blog slug/title, author name, and comment body)
+- Newly published blogs detected during Astro build sync (includes title and summary, sent once per slug)
 
 ## Documentation
 
