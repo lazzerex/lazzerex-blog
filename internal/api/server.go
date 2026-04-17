@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"lazzerex-blog/internal/config"
+	"lazzerex-blog/internal/discord"
 	"lazzerex-blog/internal/ratelimit"
 	"lazzerex-blog/internal/store"
 )
@@ -60,12 +62,25 @@ type commentCreateResponse struct {
 type reactionToggleRequest struct {
 	Slug         string `json:"slug"`
 	VisitorToken string `json:"visitorToken"`
+	PostTitle    string `json:"postTitle,omitempty"`
 }
 
 type commentCreateRequest struct {
 	Slug       string `json:"slug"`
 	AuthorName string `json:"authorName"`
 	Body       string `json:"body"`
+	PostTitle  string `json:"postTitle,omitempty"`
+}
+
+type postPublishedRequest struct {
+	Slug    string `json:"slug"`
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+}
+
+type postPublishedResponse struct {
+	Slug          string `json:"slug"`
+	NewlyNotified bool   `json:"newlyNotified"`
 }
 
 type statusRecorder struct {
@@ -93,11 +108,17 @@ type Server struct {
 	mux             *http.ServeMux
 	allowAnyOrigin  bool
 	allowedOrigins  map[string]struct{}
+	discordNotifier *discord.Notifier
 }
 
-func NewServer(cfg config.Config, logger *slog.Logger, storeLayer *store.Store) *Server {
+func NewServer(cfg config.Config, logger *slog.Logger, storeLayer *store.Store, notifiers ...*discord.Notifier) *Server {
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	var discordNotifier *discord.Notifier
+	if len(notifiers) > 0 {
+		discordNotifier = notifiers[0]
 	}
 
 	allowAnyOrigin, allowedOrigins := buildAllowedOrigins(cfg.AllowedOrigins)
@@ -112,6 +133,7 @@ func NewServer(cfg config.Config, logger *slog.Logger, storeLayer *store.Store) 
 		mux:             http.NewServeMux(),
 		allowAnyOrigin:  allowAnyOrigin,
 		allowedOrigins:  allowedOrigins,
+		discordNotifier: discordNotifier,
 	}
 
 	server.registerRoutes()
@@ -120,12 +142,14 @@ func NewServer(cfg config.Config, logger *slog.Logger, storeLayer *store.Store) 
 
 func (server *Server) registerRoutes() {
 	server.mux.HandleFunc("GET /health", server.handleHealth)
+	server.mux.HandleFunc("GET /api/views/{slug}", server.handleGetViews)
 	server.mux.HandleFunc("POST /api/views/{slug}", server.handleViews)
 	server.mux.HandleFunc("POST /api/track", server.handleTrack)
 	server.mux.HandleFunc("GET /api/reactions/{slug}", server.handleGetReactionState)
 	server.mux.HandleFunc("POST /api/reactions/toggle", server.handleToggleReaction)
 	server.mux.HandleFunc("GET /api/comments/{slug}", server.handleGetComments)
 	server.mux.HandleFunc("POST /api/comments", server.handleCreateComment)
+	server.mux.HandleFunc("POST /api/blogs/published", server.handleSyncPublishedPost)
 }
 
 func (server *Server) Handler() http.Handler {
@@ -149,6 +173,41 @@ func (server *Server) handleHealth(writer http.ResponseWriter, request *http.Req
 			Status:    status,
 			Service:   "lazzerex-go-api",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
+		},
+	})
+}
+
+func (server *Server) handleGetViews(writer http.ResponseWriter, request *http.Request) {
+	slug := strings.TrimSpace(strings.ToLower(request.PathValue("slug")))
+	if !store.ValidateSlug(slug) {
+		server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(request.Context(), readOperationTimeout)
+	defer cancel()
+
+	count, err := server.store.GetViewCount(ctx, slug)
+	if err != nil {
+		if errors.Is(err, store.ErrInvalidSlug) {
+			server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
+			return
+		}
+
+		server.logger.Error("read view count failed",
+			"slug", slug,
+			"error", err,
+		)
+
+		server.writeError(writer, http.StatusInternalServerError, "views_read_failed", "unable to read view count")
+		return
+	}
+
+	server.writeJSON(writer, http.StatusOK, responseEnvelope{
+		OK: true,
+		Data: viewsResponse{
+			Slug:  slug,
+			Count: count,
 		},
 	})
 }
@@ -315,6 +374,10 @@ func (server *Server) handleToggleReaction(writer http.ResponseWriter, request *
 		return
 	}
 
+	if reactionState.Liked {
+		server.dispatchLikeNotification(reactionState.Slug, payload.PostTitle, reactionState.Count)
+	}
+
 	server.writeJSON(writer, http.StatusOK, responseEnvelope{OK: true, Data: reactionState})
 }
 
@@ -405,10 +468,169 @@ func (server *Server) handleCreateComment(writer http.ResponseWriter, request *h
 		return
 	}
 
+	server.dispatchCommentNotification(comment, payload.PostTitle)
+
 	server.writeJSON(writer, http.StatusCreated, responseEnvelope{
 		OK:   true,
 		Data: commentCreateResponse{Comment: comment},
 	})
+}
+
+func (server *Server) handleSyncPublishedPost(writer http.ResponseWriter, request *http.Request) {
+	if !server.authorizePublishSyncRequest(request) {
+		server.writeError(writer, http.StatusUnauthorized, "unauthorized", "publish sync request is not authorized")
+		return
+	}
+
+	var payload postPublishedRequest
+	if !server.decodeJSONPayload(writer, request, &payload) {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(request.Context(), writeOperationTimeout)
+	defer cancel()
+
+	publishedPost, err := server.store.UpsertPublishedPost(ctx, store.PublishedPost{
+		Slug:    payload.Slug,
+		Title:   payload.Title,
+		Summary: payload.Summary,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrInvalidSlug):
+			server.writeError(writer, http.StatusBadRequest, "invalid_slug", "slug must match [a-z0-9-]+")
+		default:
+			server.logger.Error("upsert published post failed",
+				"slug", strings.TrimSpace(strings.ToLower(payload.Slug)),
+				"error", err,
+			)
+			server.writeError(writer, http.StatusInternalServerError, "published_post_sync_failed", "unable to sync published post")
+		}
+		return
+	}
+
+	newlyNotified := false
+	if !publishedPost.Notified && server.discordNotifier != nil && server.discordNotifier.Enabled() {
+		notifyCtx, notifyCancel := context.WithTimeout(context.Background(), server.cfg.DiscordRequestTimeout)
+		notifyErr := server.discordNotifier.NotifyPostPublished(notifyCtx, discord.PublishedPostNotification{
+			Slug:    publishedPost.Slug,
+			Title:   publishedPost.Title,
+			Summary: publishedPost.Summary,
+		})
+		notifyCancel()
+		if notifyErr != nil {
+			server.logger.Error("discord published post notification failed",
+				"slug", publishedPost.Slug,
+				"error", notifyErr,
+			)
+			server.writeError(writer, http.StatusBadGateway, "publish_notification_failed", "unable to notify published post")
+			return
+		}
+
+		if err := server.store.MarkPublishedPostNotified(ctx, publishedPost.Slug); err != nil {
+			server.logger.Error("mark published post as notified failed",
+				"slug", publishedPost.Slug,
+				"error", err,
+			)
+			server.writeError(writer, http.StatusInternalServerError, "publish_notification_state_failed", "unable to persist notification state")
+			return
+		}
+
+		newlyNotified = true
+		server.logger.Info("discord_published_post_notification_sent",
+			"slug", publishedPost.Slug,
+			"title", publishedPost.Title,
+		)
+	}
+
+	server.writeJSON(writer, http.StatusOK, responseEnvelope{
+		OK: true,
+		Data: postPublishedResponse{
+			Slug:          publishedPost.Slug,
+			NewlyNotified: newlyNotified,
+		},
+	})
+}
+
+func (server *Server) authorizePublishSyncRequest(request *http.Request) bool {
+	requiredSecret := strings.TrimSpace(server.cfg.PublishSyncSecret)
+	if requiredSecret == "" {
+		return true
+	}
+
+	providedSecret := strings.TrimSpace(request.Header.Get("X-Lazzerex-Publish-Secret"))
+	if providedSecret == "" {
+		return false
+	}
+
+	return subtle.ConstantTimeCompare([]byte(requiredSecret), []byte(providedSecret)) == 1
+}
+
+func (server *Server) dispatchLikeNotification(slug, postTitle string, likeCount int64) {
+	if server.discordNotifier == nil || !server.discordNotifier.Enabled() {
+		return
+	}
+
+	notificationSlug := strings.TrimSpace(strings.ToLower(slug))
+	notificationTitle := strings.TrimSpace(postTitle)
+
+	go func() {
+		notifyCtx, notifyCancel := context.WithTimeout(context.Background(), server.cfg.DiscordRequestTimeout)
+		defer notifyCancel()
+
+		err := server.discordNotifier.NotifyLike(notifyCtx, discord.LikeNotification{
+			Slug:      notificationSlug,
+			PostTitle: notificationTitle,
+			LikeCount: likeCount,
+		})
+		if err != nil {
+			server.logger.Warn("discord like notification failed",
+				"slug", notificationSlug,
+				"error", err,
+			)
+			return
+		}
+
+		server.logger.Info("discord_like_notification_sent",
+			"slug", notificationSlug,
+			"likes_count", likeCount,
+		)
+	}()
+}
+
+func (server *Server) dispatchCommentNotification(comment store.Comment, postTitle string) {
+	if server.discordNotifier == nil || !server.discordNotifier.Enabled() {
+		return
+	}
+
+	notificationSlug := strings.TrimSpace(strings.ToLower(comment.Slug))
+	notificationTitle := strings.TrimSpace(postTitle)
+	notificationAuthor := strings.TrimSpace(comment.AuthorName)
+	notificationBody := strings.TrimSpace(comment.Body)
+
+	go func() {
+		notifyCtx, notifyCancel := context.WithTimeout(context.Background(), server.cfg.DiscordRequestTimeout)
+		defer notifyCancel()
+
+		err := server.discordNotifier.NotifyComment(notifyCtx, discord.CommentNotification{
+			Slug:       notificationSlug,
+			PostTitle:  notificationTitle,
+			AuthorName: notificationAuthor,
+			Body:       notificationBody,
+		})
+		if err != nil {
+			server.logger.Warn("discord comment notification failed",
+				"slug", notificationSlug,
+				"error", err,
+			)
+			return
+		}
+
+		server.logger.Info("discord_comment_notification_sent",
+			"slug", notificationSlug,
+			"author", notificationAuthor,
+		)
+	}()
 }
 
 func (server *Server) decodeJSONPayload(writer http.ResponseWriter, request *http.Request, destination any) bool {
