@@ -179,14 +179,6 @@ const ogImage = (() => {
           <p class="engagement-like-status" data-like-status aria-live="polite"></p>
         </section>
 
-        <section class="engagement-comments engagement-comments-panel" aria-label="Comments">
-          <div class="engagement-comments-header">
-            <h2>Comments</h2>
-            <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
-          </div>
-          <ul class="engagement-comments-list" data-comments-list></ul>
-        </section>
-
         <section class="engagement-compose-panel" aria-label="Write a comment">
           <p class="engagement-panel-kicker">Join the conversation</p>
           <h2>Write a Comment</h2>
@@ -212,6 +204,14 @@ const ogImage = (() => {
               <button type="submit" class="comment-submit" data-comment-submit>Post Comment</button>
             </div>
           </form>
+        </section>
+
+        <section class="engagement-comments engagement-comments-panel" aria-label="Comments">
+          <div class="engagement-comments-header">
+            <h2>Comments</h2>
+            <p class="engagement-comments-status" data-comments-status>Loading comments...</p>
+          </div>
+          <ul class="engagement-comments-list" data-comments-list></ul>
         </section>
       </section>
     </article>
@@ -336,6 +336,8 @@ const ogImage = (() => {
       let reactionCount = 0;
       let isLiked = false;
       let visibleCommentCount = 0;
+      let hasViewIncrementRequestBeenSent = false;
+      let recoverySyncHandle = 0;
 
       const updateViewCountUI = (count) => {
         if (!(viewCountValue instanceof HTMLElement)) {
@@ -419,91 +421,122 @@ const ogImage = (() => {
         const runtimeApi = getRuntimeApi();
         if (!runtimeApi || typeof runtimeApi.getReactions !== 'function') {
           updateLikeUI();
-          return;
+          return false;
         }
 
-        const response = await runtimeApi.getReactions(postSlug, visitorToken, { timeoutMs: 1800 });
+        const response = await runtimeApi.getReactions(postSlug, visitorToken, {
+          retries: 2,
+          timeoutMs: 3600
+        });
         if (!response) {
           updateLikeUI();
-          setLikeStatus('Unable to load post reaction right now.', true);
-          return;
+          setLikeStatus('Engagement service is waking up. Retrying shortly...', true);
+          return false;
         }
 
         reactionCount = Number(response.count || 0);
         isLiked = Boolean(response.liked);
         updateLikeUI();
         setLikeStatus('');
+        return true;
       };
 
       const loadComments = async () => {
         if (!(commentsList instanceof HTMLElement)) {
-          return;
+          return false;
         }
-
-        commentsList.innerHTML = '';
 
         const runtimeApi = getRuntimeApi();
         if (!runtimeApi || typeof runtimeApi.getComments !== 'function') {
           setCommentsStatus('Comments are currently unavailable.', true);
-          return;
+          return false;
         }
 
         const response = await runtimeApi.getComments(postSlug, {
           limit: 40,
-          timeoutMs: 2200
+          retries: 2,
+          timeoutMs: 4200
         });
 
         if (!response || !Array.isArray(response.comments)) {
-          setCommentsStatus('Unable to load comments right now.', true);
-          return;
+          setCommentsStatus('Comments service is waking up. Retrying shortly...', true);
+          return false;
         }
 
+        const commentsFragment = document.createDocumentFragment();
         visibleCommentCount = response.comments.length;
         response.comments.forEach((comment) => {
           const commentItem = renderCommentItem(comment);
-          if (commentItem && commentsList instanceof HTMLElement) {
-            commentsList.appendChild(commentItem);
+          if (commentItem) {
+            commentsFragment.appendChild(commentItem);
           }
         });
+
+        commentsList.innerHTML = '';
+        commentsList.appendChild(commentsFragment);
         updateCommentCountStatus();
+        return true;
       };
 
-      const loadAndIncrementViews = async () => {
+      const loadViewCount = async () => {
         const runtimeApi = getRuntimeApi();
         if (!runtimeApi) {
-          return;
+          return false;
         }
 
         if (typeof runtimeApi.getViews === 'function') {
           const currentViewState = await runtimeApi.getViews(postSlug, {
-            timeoutMs: 1800
+            retries: 2,
+            timeoutMs: 3600
           });
 
           if (currentViewState) {
             updateViewCountUI(currentViewState.count);
+            return true;
           }
         }
 
-        if (typeof runtimeApi.incrementView === 'function') {
-          const incrementedViewState = await runtimeApi.incrementView(postSlug, {
-            timeoutMs: 1900
-          });
+        return false;
+      };
 
-          if (incrementedViewState) {
-            updateViewCountUI(incrementedViewState.count);
-            return;
-          }
+      const syncViewCounter = async () => {
+        const initialViewReadSucceeded = await loadViewCount();
+
+        const runtimeApi = getRuntimeApi();
+        if (!runtimeApi || typeof runtimeApi.incrementView !== 'function') {
+          return initialViewReadSucceeded;
         }
 
-        if (typeof runtimeApi.getViews === 'function') {
-          const fallbackViewState = await runtimeApi.getViews(postSlug, {
-            timeoutMs: 1800
-          });
-
-          if (fallbackViewState) {
-            updateViewCountUI(fallbackViewState.count);
-          }
+        if (hasViewIncrementRequestBeenSent) {
+          return initialViewReadSucceeded;
         }
+
+        hasViewIncrementRequestBeenSent = true;
+
+        const incrementedViewState = await runtimeApi.incrementView(postSlug, {
+          timeoutMs: 4200
+        });
+
+        if (incrementedViewState) {
+          updateViewCountUI(incrementedViewState.count);
+          return true;
+        }
+
+        const fallbackViewReadSucceeded = await loadViewCount();
+        return initialViewReadSucceeded || fallbackViewReadSucceeded;
+      };
+
+      const scheduleRecoverySync = (delayMs = 6500) => {
+        if (recoverySyncHandle !== 0) {
+          return;
+        }
+
+        recoverySyncHandle = window.setTimeout(() => {
+          recoverySyncHandle = 0;
+          void loadViewCount();
+          void loadReactionState();
+          void loadComments();
+        }, delayMs);
       };
 
       if (likeButton instanceof HTMLButtonElement) {
@@ -546,7 +579,11 @@ const ogImage = (() => {
               );
             }
           } else {
-            setLikeStatus('Unable to update post reaction right now.', true);
+            const reloadedReaction = await loadReactionState();
+            if (!reloadedReaction) {
+              setLikeStatus('Unable to update post reaction right now.', true);
+              scheduleRecoverySync();
+            }
           }
 
           likeButton.disabled = false;
@@ -589,7 +626,13 @@ const ogImage = (() => {
           );
 
           if (!response || !response.comment) {
-            setComposeStatus('Unable to post comment right now.', true);
+            const reloadedComments = await loadComments();
+            if (reloadedComments) {
+              setComposeStatus('Comment service reconnected. Please check the comments list.', false);
+            } else {
+              setComposeStatus('Unable to post comment right now.', true);
+              scheduleRecoverySync();
+            }
             commentSubmitButton.disabled = false;
             return;
           }
@@ -644,7 +687,17 @@ const ogImage = (() => {
         window.clearTimeout(runtimeWaitHandle);
         setEngagementReadyState();
 
-        void loadAndIncrementViews();
+        const hydrateEngagement = async () => {
+          const [viewsReady, reactionReady, commentsReady] = await Promise.all([
+            syncViewCounter(),
+            loadReactionState(),
+            loadComments()
+          ]);
+
+          if (!viewsReady || !reactionReady || !commentsReady) {
+            scheduleRecoverySync();
+          }
+        };
 
         const runtimeApi = getRuntimeApi();
         if (runtimeApi && typeof runtimeApi.track === 'function') {
@@ -663,8 +716,7 @@ const ogImage = (() => {
           );
         }
 
-        void loadReactionState();
-        void loadComments();
+        void hydrateEngagement();
       };
 
       if (getRuntimeApi()) {

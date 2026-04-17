@@ -144,37 +144,51 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
           method = "GET",
           path,
           payload,
-          timeoutMs = 2200
+          timeoutMs = 2200,
+          retries = 0,
+          retryDelayMs = 280
         }) => {
           const requestUrl = buildRuntimeApiUrl(path);
           const hasPayload = typeof payload !== "undefined";
-          const abortController = new AbortController();
-          const timeoutHandle = window.setTimeout(() => abortController.abort(), timeoutMs);
+          const normalizedRetries = Number.isFinite(Number(retries))
+            ? Math.max(0, Math.floor(Number(retries)))
+            : 0;
+          const normalizedRetryDelay = Number.isFinite(Number(retryDelayMs))
+            ? Math.max(120, Math.floor(Number(retryDelayMs)))
+            : 280;
 
-          try {
-            const response = await fetch(requestUrl, {
-              method,
-              mode: "cors",
-              headers: hasPayload ? { "Content-Type": "application/json" } : undefined,
-              body: hasPayload ? JSON.stringify(payload) : undefined,
-              signal: abortController.signal
-            });
+          for (let attempt = 0; attempt <= normalizedRetries; attempt += 1) {
+            const abortController = new AbortController();
+            const timeoutHandle = window.setTimeout(() => abortController.abort(), timeoutMs);
 
-            if (!response.ok) {
-              return null;
+            try {
+              const response = await fetch(requestUrl, {
+                method,
+                mode: "cors",
+                headers: hasPayload ? { "Content-Type": "application/json" } : undefined,
+                body: hasPayload ? JSON.stringify(payload) : undefined,
+                signal: abortController.signal
+              });
+
+              if (response.ok) {
+                const envelope = await response.json().catch(() => null);
+                if (envelope && envelope.ok === true) {
+                  return envelope.data ?? null;
+                }
+              } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                return null;
+              }
+            } catch {
+            } finally {
+              window.clearTimeout(timeoutHandle);
             }
 
-            const envelope = await response.json().catch(() => null);
-            if (!envelope || envelope.ok !== true) {
-              return null;
+            if (attempt < normalizedRetries) {
+              await sleep(normalizedRetryDelay * (attempt + 1));
             }
-
-            return envelope.data ?? null;
-          } catch {
-            return null;
-          } finally {
-            window.clearTimeout(timeoutHandle);
           }
+
+          return null;
         };
 
         window.lazzerexRuntimeApi = {
@@ -187,7 +201,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
             return requestRuntimeJson({
               method: "POST",
               path: `/api/views/${encodeURIComponent(normalizedSlug)}`,
-              timeoutMs: Number(options.timeoutMs ?? 1800)
+              timeoutMs: Number(options.timeoutMs ?? 3800),
+              retries: Number(options.retries ?? 0)
             });
           },
           getViews(slug, options = {}) {
@@ -199,7 +214,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
             return requestRuntimeJson({
               method: "GET",
               path: `/api/views/${encodeURIComponent(normalizedSlug)}`,
-              timeoutMs: Number(options.timeoutMs ?? 1800)
+              timeoutMs: Number(options.timeoutMs ?? 3600),
+              retries: Number(options.retries ?? 2)
             });
           },
           postView(slug, options = {}) {
@@ -253,7 +269,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
             return requestRuntimeJson({
               method: "GET",
               path: `/api/reactions/${encodeURIComponent(normalizedSlug)}${tokenQuery}`,
-              timeoutMs: Number(options.timeoutMs ?? 1800)
+              timeoutMs: Number(options.timeoutMs ?? 3600),
+              retries: Number(options.retries ?? 2)
             });
           },
           toggleReaction(slug, visitorToken, options = {}) {
@@ -272,7 +289,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
                 visitorToken: normalizedToken,
                 postTitle: normalizedPostTitle
               },
-              timeoutMs: Number(options.timeoutMs ?? 2200)
+              timeoutMs: Number(options.timeoutMs ?? 4200),
+              retries: Number(options.retries ?? 0)
             });
           },
           getComments(slug, options = {}) {
@@ -289,7 +307,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
             return requestRuntimeJson({
               method: "GET",
               path: `/api/comments/${encodeURIComponent(normalizedSlug)}?limit=${boundedLimit}`,
-              timeoutMs: Number(options.timeoutMs ?? 2200)
+              timeoutMs: Number(options.timeoutMs ?? 4200),
+              retries: Number(options.retries ?? 2)
             });
           },
           postComment(commentPayload, options = {}) {
@@ -310,7 +329,8 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
                 body,
                 postTitle
               },
-              timeoutMs: Number(options.timeoutMs ?? 2600)
+              timeoutMs: Number(options.timeoutMs ?? 5600),
+              retries: Number(options.retries ?? 0)
             });
           }
         };
