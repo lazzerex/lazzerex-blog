@@ -94,6 +94,7 @@ func (notifier *Notifier) NotifyLike(ctx context.Context, payload LikeNotificati
 	}
 
 	postTitle := normalizePostTitle(payload.PostTitle, payload.Slug)
+	blogURL := buildBlogURL(payload.Slug)
 	embed := webhookEmbed{
 		Title:       "New Like",
 		Description: "A reader liked one of your blog posts.",
@@ -113,6 +114,10 @@ func (notifier *Notifier) NotifyLike(ctx context.Context, payload LikeNotificati
 				Value:  strconv.FormatInt(payload.LikeCount, 10),
 				Inline: true,
 			},
+			{
+				Name:  "Open Blog Post",
+				Value: blogURL,
+			},
 		},
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
@@ -128,6 +133,7 @@ func (notifier *Notifier) NotifyComment(ctx context.Context, payload CommentNoti
 	postTitle := normalizePostTitle(payload.PostTitle, payload.Slug)
 	authorName := normalizeAuthor(payload.AuthorName)
 	commentBody := truncateDiscordField(strings.TrimSpace(payload.Body), 1000, "(empty comment)")
+	blogURL := buildBlogURL(payload.Slug)
 
 	embed := webhookEmbed{
 		Title:       "New Comment",
@@ -152,6 +158,10 @@ func (notifier *Notifier) NotifyComment(ctx context.Context, payload CommentNoti
 				Name:  "Comment",
 				Value: commentBody,
 			},
+			{
+				Name:  "Open Blog Post",
+				Value: blogURL,
+			},
 		},
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
@@ -166,6 +176,7 @@ func (notifier *Notifier) NotifyPostPublished(ctx context.Context, payload Publi
 
 	postTitle := normalizePostTitle(payload.Title, payload.Slug)
 	summary := truncateDiscordField(strings.TrimSpace(payload.Summary), 1800, "Summary not provided.")
+	blogURL := buildBlogURL(payload.Slug)
 
 	embed := webhookEmbed{
 		Title:       "New Blog Published",
@@ -180,11 +191,24 @@ func (notifier *Notifier) NotifyPostPublished(ctx context.Context, payload Publi
 				Name:  "Slug",
 				Value: normalizeSlug(payload.Slug),
 			},
+			{
+				Name:  "Open Blog Post",
+				Value: blogURL,
+			},
 		},
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	return notifier.send(ctx, webhookPayload{Embeds: []webhookEmbed{embed}})
+
+}
+
+func buildBlogURL(slug string) string {
+	trimmedSlug := strings.TrimSpace(slug)
+	if trimmedSlug == "" {
+		return "https://lazzerex-blog.vercel.app/blog/unknown"
+	}
+	return "https://lazzerex-blog.vercel.app/blog/" + trimmedSlug
 }
 
 func (notifier *Notifier) send(ctx context.Context, payload webhookPayload) error {
