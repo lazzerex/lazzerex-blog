@@ -23,6 +23,11 @@ var (
 	visitorTokenPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{16,128}$`)
 )
 
+const (
+	maxPublishedPostTitleRunes   = 220
+	maxPublishedPostSummaryRunes = 1400
+)
+
 // TrackEvent represents a non-blocking analytics event posted from the frontend.
 type TrackEvent struct {
 	Slug     string         `json:"slug"`
@@ -49,6 +54,13 @@ type Comment struct {
 	Body       string `json:"body"`
 	Status     string `json:"status"`
 	CreatedAt  string `json:"createdAt"`
+}
+
+type PublishedPost struct {
+	Slug     string `json:"slug"`
+	Title    string `json:"title"`
+	Summary  string `json:"summary"`
+	Notified bool   `json:"notified"`
 }
 
 type Store struct {
@@ -144,6 +156,29 @@ func (store *Store) IncrementView(ctx context.Context, slug, ipHash string) (int
 	}
 
 	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (store *Store) GetViewCount(ctx context.Context, slug string) (int64, error) {
+	normalizedSlug := strings.TrimSpace(strings.ToLower(slug))
+	if !ValidateSlug(normalizedSlug) {
+		return 0, ErrInvalidSlug
+	}
+
+	var count int64
+	err := store.dbConn.QueryRowContext(ctx, store.q(`
+		SELECT count
+		FROM post_views
+		WHERE slug = ?
+	`), normalizedSlug).Scan(&count)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+
+	if err != nil {
 		return 0, err
 	}
 
@@ -433,12 +468,90 @@ func (store *Store) CreateComment(ctx context.Context, payload CreateCommentPayl
 	}, nil
 }
 
+func (store *Store) UpsertPublishedPost(ctx context.Context, payload PublishedPost) (PublishedPost, error) {
+	normalizedSlug := strings.TrimSpace(strings.ToLower(payload.Slug))
+	if !ValidateSlug(normalizedSlug) {
+		return PublishedPost{}, ErrInvalidSlug
+	}
+
+	normalizedTitle := normalizePublishedPostTitle(payload.Title, normalizedSlug)
+	normalizedSummary := normalizePublishedPostSummary(payload.Summary)
+
+	tx, err := store.dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return PublishedPost{}, err
+	}
+
+	defer tx.Rollback()
+
+	notified := false
+	var notifiedAt sql.NullString
+	err = tx.QueryRowContext(ctx, store.q(`
+		SELECT `+store.notifiedAtSelectExpr()+`
+		FROM published_posts
+		WHERE slug = ?
+	`), normalizedSlug).Scan(&notifiedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		if _, err := tx.ExecContext(ctx, store.q(`
+			INSERT INTO published_posts (slug, title, summary, updated_at)
+			VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+		`), normalizedSlug, normalizedTitle, normalizedSummary); err != nil {
+			return PublishedPost{}, err
+		}
+	} else if err != nil {
+		return PublishedPost{}, err
+	} else {
+		notified = notifiedAt.Valid
+
+		if _, err := tx.ExecContext(ctx, store.q(`
+			UPDATE published_posts
+			SET title = ?, summary = ?, updated_at = CURRENT_TIMESTAMP
+			WHERE slug = ?
+		`), normalizedTitle, normalizedSummary, normalizedSlug); err != nil {
+			return PublishedPost{}, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return PublishedPost{}, err
+	}
+
+	return PublishedPost{
+		Slug:     normalizedSlug,
+		Title:    normalizedTitle,
+		Summary:  normalizedSummary,
+		Notified: notified,
+	}, nil
+}
+
+func (store *Store) MarkPublishedPostNotified(ctx context.Context, slug string) error {
+	normalizedSlug := strings.TrimSpace(strings.ToLower(slug))
+	if !ValidateSlug(normalizedSlug) {
+		return ErrInvalidSlug
+	}
+
+	_, err := store.dbConn.ExecContext(ctx, store.q(`
+		UPDATE published_posts
+		SET notified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		WHERE slug = ?
+	`), normalizedSlug)
+	return err
+}
+
 func (store *Store) createdAtSelectExpr() string {
 	if store.dialect == "postgres" {
 		return "created_at::text"
 	}
 
 	return "created_at"
+}
+
+func (store *Store) notifiedAtSelectExpr() string {
+	if store.dialect == "postgres" {
+		return "notified_at::text"
+	}
+
+	return "notified_at"
 }
 
 func normalizeCreatedAtValue(value any) string {
@@ -472,6 +585,37 @@ func normalizeAuthorName(authorName string) string {
 
 	runes := []rune(normalized)
 	return strings.TrimSpace(string(runes[:60]))
+}
+
+func normalizePublishedPostTitle(title, slug string) string {
+	normalized := strings.TrimSpace(title)
+	if normalized == "" {
+		return slug
+	}
+
+	return truncateRunes(normalized, maxPublishedPostTitleRunes)
+}
+
+func normalizePublishedPostSummary(summary string) string {
+	normalized := strings.TrimSpace(summary)
+	if normalized == "" {
+		return ""
+	}
+
+	return truncateRunes(normalized, maxPublishedPostSummaryRunes)
+}
+
+func truncateRunes(value string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+
+	runes := []rune(value)
+	if len(runes) <= maxRunes {
+		return value
+	}
+
+	return strings.TrimSpace(string(runes[:maxRunes]))
 }
 
 func isValidCommentBody(body string) bool {
