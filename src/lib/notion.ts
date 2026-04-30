@@ -25,6 +25,9 @@ export interface NotionPost {
 
 const notionToken = import.meta.env.NOTION_TOKEN ?? import.meta.env.NOTION_API_KEY;
 const notionDatabaseId = import.meta.env.NOTION_DATABASE_ID;
+const notionPublicSiteUrl = String(import.meta.env.NOTION_PUBLIC_SITE_URL || "https://lazzerex.notion.site")
+  .trim()
+  .replace(/\/+$/, "");
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 
@@ -40,6 +43,20 @@ function slugify(value: string): string {
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
+}
+
+function extractNotionSharePath(rawUrl: string): string | undefined {
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  try {
+    const parsedUrl = new URL(rawUrl);
+    const segments = parsedUrl.pathname.split("/").filter(Boolean);
+    return segments.length > 0 ? segments[segments.length - 1] : undefined;
+  } catch (error) {
+    return undefined;
+  }
 }
 
 function richTextToPlainText(richText: RichTextItemResponse[] = []): string {
@@ -306,6 +323,16 @@ function getPageTags(page: PageObjectResponse): string[] {
 }
 
 function getPageNotionUrl(page: PageObjectResponse): string {
+  const publicUrl = (page as PageObjectResponse & { public_url?: string | null }).public_url;
+  if (publicUrl) {
+    return publicUrl;
+  }
+
+  const sharePath = extractNotionSharePath(page.url);
+  if (sharePath && notionPublicSiteUrl) {
+    return `${notionPublicSiteUrl}/${sharePath}`;
+  }
+
   return page.url;
 }
 
