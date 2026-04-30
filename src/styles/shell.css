@@ -36,8 +36,8 @@
 }
 
 .shell-container {
-  width: min(1460px, 100%);
-  height: clamp(620px, 82vh, 760px);
+  width: min(1680px, 100%);
+  height: clamp(680px, 86vh, 880px);
   max-height: calc(100vh - (var(--space-4) * 2));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -176,7 +176,7 @@ body.is-navigating .shell-container {
 .shell-body {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
-  margin: var(--space-5) var(--space-6) var(--space-4);
+  margin: var(--space-4) var(--space-5) var(--space-4);
   min-height: 0;
   position: relative;
   isolation: isolate;
@@ -382,7 +382,7 @@ body.is-navigating .shell-container {
 
   .shell-container {
     width: min(100%, calc(100vw - 20px));
-    height: clamp(600px, 80vh, 740px);
+    height: clamp(640px, 82vh, 780px);
   }
 
   .shell-body {
