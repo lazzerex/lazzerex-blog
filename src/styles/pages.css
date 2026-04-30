@@ -182,18 +182,25 @@
   background: rgba(16, 21, 30, 0.4);
   backdrop-filter: blur(13px) saturate(124%);
   -webkit-backdrop-filter: blur(13px) saturate(124%);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: var(--space-2);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-3);
-  row-gap: var(--space-2);
+  width: 100%;
 }
 
 .page-dot-group {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .page-arrow {
@@ -204,10 +211,12 @@
   font-family: var(--font-ui);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 7px 12px;
+  padding: 0;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
+  display: grid;
+  place-items: center;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
@@ -223,12 +232,13 @@
 }
 
 .page-indicator {
-  grid-column: 1 / -1;
-  text-align: center;
+  width: 100%;
+  text-align: right;
   color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
