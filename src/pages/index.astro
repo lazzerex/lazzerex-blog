@@ -1,7 +1,7 @@
 ---
 import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
 import { getExplorerPosts } from "../lib/posts";
-import { FileText } from 'lucide-astro';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-astro';
 
 const postSummaries = await getExplorerPosts();
 const PAGE_SIZE = 8;
@@ -56,35 +56,37 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       {
         pageCount > 1 && (
           <nav class="pagination-dots" aria-label="Article pagination">
-            <button
-              type="button"
-              class="page-arrow"
-              data-page-prev
-              aria-label="Go to previous page"
-            >
-              Previous
-            </button>
-            <div class="page-dot-group" role="tablist" aria-label="Page selector">
-              {
-                Array.from({ length: pageCount }, (_, index) => (
-                  <button
-                    type="button"
-                    class={`page-dot ${index === 0 ? "active" : ""}`}
-                    data-page-dot={index}
-                    aria-label={`Go to article page ${index + 1}`}
-                    aria-current={index === 0 ? "page" : undefined}
-                  ></button>
-                ))
-              }
+            <div class="pagination-controls">
+              <button
+                type="button"
+                class="page-arrow"
+                data-page-prev
+                aria-label="Go to previous page"
+              >
+                <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <div class="page-dot-group" role="tablist" aria-label="Page selector">
+                {
+                  Array.from({ length: pageCount }, (_, index) => (
+                    <button
+                      type="button"
+                      class={`page-dot ${index === 0 ? "active" : ""}`}
+                      data-page-dot={index}
+                      aria-label={`Go to article page ${index + 1}`}
+                      aria-current={index === 0 ? "page" : undefined}
+                    ></button>
+                  ))
+                }
+              </div>
+              <button
+                type="button"
+                class="page-arrow"
+                data-page-next
+                aria-label="Go to next page"
+              >
+                <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
             </div>
-            <button
-              type="button"
-              class="page-arrow"
-              data-page-next
-              aria-label="Go to next page"
-            >
-              Next
-            </button>
             <span class="page-indicator" data-page-indicator>
               Page 1 of {pageCount}
             </span>
