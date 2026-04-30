@@ -408,10 +408,10 @@
 .detail-article p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.78;
   font-family: var(--font-reader);
-  max-width: 72ch;
+  max-width: 78ch;
 }
 
 .detail-window {
@@ -419,7 +419,7 @@
 }
 
 .reader-article {
-  max-width: 680px;
+  max-width: 760px;
   margin: 0 auto;
   padding: var(--space-6) var(--space-5) var(--space-8);
   display: grid;
@@ -457,8 +457,8 @@
   margin: 0;
   color: var(--color-text-secondary);
   font-family: var(--font-reader);
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.78;
 }
 
 .reader-tags {
@@ -505,8 +505,8 @@
   gap: var(--space-3);
   color: var(--color-text-secondary);
   font-family: var(--font-reader);
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.78;
 }
 
 .reader-content :is(h2, h3, h4) {
