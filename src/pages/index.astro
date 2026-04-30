@@ -4,7 +4,7 @@ import { getExplorerPosts } from "../lib/posts";
 import { FileText } from 'lucide-astro';
 
 const postSummaries = await getExplorerPosts();
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 8;
 const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 ---
 
@@ -56,17 +56,38 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       {
         pageCount > 1 && (
           <nav class="pagination-dots" aria-label="Article pagination">
-            {
-              Array.from({ length: pageCount }, (_, index) => (
-                <button
-                  type="button"
-                  class={`page-dot ${index === 0 ? "active" : ""}`}
-                  data-page-dot={index}
-                  aria-label={`Go to article page ${index + 1}`}
-                  aria-current={index === 0 ? "page" : undefined}
-                ></button>
-              ))
-            }
+            <button
+              type="button"
+              class="page-arrow"
+              data-page-prev
+              aria-label="Go to previous page"
+            >
+              Previous
+            </button>
+            <div class="page-dot-group" role="tablist" aria-label="Page selector">
+              {
+                Array.from({ length: pageCount }, (_, index) => (
+                  <button
+                    type="button"
+                    class={`page-dot ${index === 0 ? "active" : ""}`}
+                    data-page-dot={index}
+                    aria-label={`Go to article page ${index + 1}`}
+                    aria-current={index === 0 ? "page" : undefined}
+                  ></button>
+                ))
+              }
+            </div>
+            <button
+              type="button"
+              class="page-arrow"
+              data-page-next
+              aria-label="Go to next page"
+            >
+              Next
+            </button>
+            <span class="page-indicator" data-page-indicator>
+              Page 1 of {pageCount}
+            </span>
           </nav>
         )
       }
@@ -107,6 +128,9 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       const previewSummary = previewCard?.querySelector('[data-preview-summary]');
       const previewTags = previewCard?.querySelector('[data-preview-tags]');
       const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const prevButton = document.querySelector('[data-page-prev]');
+      const nextButton = document.querySelector('[data-page-next]');
+      const pageIndicator = document.querySelector('[data-page-indicator]');
       const runtimeApi = window.lazzerexRuntimeApi;
 
       if (!tableBody) {
@@ -118,6 +142,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
       const totalPages = Math.ceil(rows.length / pageSize);
       let activePreviewRow = null;
       let previewRequestId = 0;
+      let activePageIndex = 0;
 
       const setPreviewLoading = (isLoading) => {
         if (!previewCard) {
@@ -316,6 +341,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 
       const renderPage = (targetPage) => {
         const pageIndex = Math.max(0, Math.min(targetPage, totalPages - 1));
+        activePageIndex = pageIndex;
 
         rows.forEach((row, rowIndex) => {
           const isVisible = rowIndex >= pageIndex * pageSize && rowIndex < (pageIndex + 1) * pageSize;
@@ -339,6 +365,18 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
             }
           });
         }
+
+        if (pageIndicator instanceof HTMLElement) {
+          pageIndicator.textContent = `Page ${pageIndex + 1} of ${totalPages}`;
+        }
+
+        if (prevButton instanceof HTMLButtonElement) {
+          prevButton.disabled = pageIndex === 0;
+        }
+
+        if (nextButton instanceof HTMLButtonElement) {
+          nextButton.disabled = pageIndex >= totalPages - 1;
+        }
       };
 
       tableBody.addEventListener('scroll', () => {
@@ -353,6 +391,14 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
         dots.forEach((dot, index) => {
           dot.addEventListener('click', () => renderPage(index));
         });
+      }
+
+      if (prevButton instanceof HTMLButtonElement) {
+        prevButton.addEventListener('click', () => renderPage(activePageIndex - 1));
+      }
+
+      if (nextButton instanceof HTMLButtonElement) {
+        nextButton.addEventListener('click', () => renderPage(activePageIndex + 1));
       }
 
       renderPage(0);
