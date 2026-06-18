@@ -136,7 +136,7 @@ const ogImage = (() => {
 
             if (block.type === "code") {
               return (
-                <pre>
+                <pre data-language={block.language || undefined}>
                   <code>{block.code}</code>
                 </pre>
               );
