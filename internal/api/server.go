@@ -575,13 +575,20 @@ func (server *Server) dispatchLikeNotification(slug, postTitle string, likeCount
 	notificationTitle := strings.TrimSpace(postTitle)
 
 	go func() {
+		fetchCtx, fetchCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		viewCount, _ := server.store.GetViewCount(fetchCtx, notificationSlug)
+		commentCount, _ := server.store.GetCommentCount(fetchCtx, notificationSlug)
+		fetchCancel()
+
 		notifyCtx, notifyCancel := context.WithTimeout(context.Background(), server.cfg.DiscordRequestTimeout)
 		defer notifyCancel()
 
 		err := server.discordNotifier.NotifyLike(notifyCtx, discord.LikeNotification{
-			Slug:      notificationSlug,
-			PostTitle: notificationTitle,
-			LikeCount: likeCount,
+			Slug:         notificationSlug,
+			PostTitle:    notificationTitle,
+			LikeCount:    likeCount,
+			ViewCount:    viewCount,
+			CommentCount: commentCount,
 		})
 		if err != nil {
 			server.logger.Warn("discord like notification failed",
@@ -609,14 +616,23 @@ func (server *Server) dispatchCommentNotification(comment store.Comment, postTit
 	notificationBody := strings.TrimSpace(comment.Body)
 
 	go func() {
+		fetchCtx, fetchCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		viewCount, _ := server.store.GetViewCount(fetchCtx, notificationSlug)
+		reactionState, _ := server.store.GetReactionState(fetchCtx, notificationSlug, "")
+		commentCount, _ := server.store.GetCommentCount(fetchCtx, notificationSlug)
+		fetchCancel()
+
 		notifyCtx, notifyCancel := context.WithTimeout(context.Background(), server.cfg.DiscordRequestTimeout)
 		defer notifyCancel()
 
 		err := server.discordNotifier.NotifyComment(notifyCtx, discord.CommentNotification{
-			Slug:       notificationSlug,
-			PostTitle:  notificationTitle,
-			AuthorName: notificationAuthor,
-			Body:       notificationBody,
+			Slug:         notificationSlug,
+			PostTitle:    notificationTitle,
+			AuthorName:   notificationAuthor,
+			Body:         notificationBody,
+			ViewCount:    viewCount,
+			LikeCount:    reactionState.Count,
+			CommentCount: commentCount,
 		})
 		if err != nil {
 			server.logger.Warn("discord comment notification failed",
