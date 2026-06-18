@@ -10,4 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render service health endpoint
-        run: curl --fail --silent --show-error https://lazzerex-blog-web-service.onrender.com/health
+        run: |
+          curl --silent https://lazzerex-blog-web-service.onrender.com/health || true
+          sleep 60
+          curl --fail --silent --show-error https://lazzerex-blog-web-service.onrender.com/health
