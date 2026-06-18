@@ -1098,6 +1098,10 @@ body.glass-disabled .detail-window .engagement-compose-panel {
 }
 
 @media (max-width: 560px) {
+  .article-table-header {
+    display: none;
+  }
+
   .content-window {
     margin: 0;
     border-left: 0;
