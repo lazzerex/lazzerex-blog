@@ -9,7 +9,8 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
 const DEFAULT_COVER = "/images/folder-bg.jfif";
 const DEFAULT_AUTHOR = "H. S. N. Bình";
-const NOTION_COVERS_DIR = join(process.cwd(), "public", "images", "notion-covers");
+const NOTION_COVERS_PUBLIC_DIR = join(process.cwd(), "public", "images", "notion-covers");
+const NOTION_COVERS_DIST_DIR = join(process.cwd(), "dist", "images", "notion-covers");
 const NOTION_COVERS_WEB_PATH = "/images/notion-covers";
 
 function guessImageExtension(url: string): string {
@@ -20,23 +21,33 @@ function guessImageExtension(url: string): string {
 async function downloadNotionCover(slug: string, url: string): Promise<string | undefined> {
   const ext = guessImageExtension(url);
   const filename = `${slug}${ext}`;
-  const localPath = join(NOTION_COVERS_DIR, filename);
+  const publicPath = join(NOTION_COVERS_PUBLIC_DIR, filename);
   const webPath = `${NOTION_COVERS_WEB_PATH}/${filename}`;
 
   try {
-    await access(localPath);
+    await access(publicPath);
     return webPath;
   } catch {
     // not yet downloaded
   }
 
   try {
-    await mkdir(NOTION_COVERS_DIR, { recursive: true });
     const response = await fetch(url);
     if (!response.ok) {
       return undefined;
     }
-    await writeFile(localPath, Buffer.from(await response.arrayBuffer()));
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    await mkdir(NOTION_COVERS_PUBLIC_DIR, { recursive: true });
+    await writeFile(publicPath, buffer);
+
+    // Astro copies public/ to dist/ before page generation runs in prod builds,
+    // so also write directly to dist/ to ensure the image is in the final output.
+    if (!import.meta.env.DEV) {
+      await mkdir(NOTION_COVERS_DIST_DIR, { recursive: true });
+      await writeFile(join(NOTION_COVERS_DIST_DIR, filename), buffer);
+    }
+
     return webPath;
   } catch {
     return undefined;
