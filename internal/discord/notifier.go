@@ -26,16 +26,21 @@ type Notifier struct {
 }
 
 type LikeNotification struct {
-	Slug      string
-	PostTitle string
-	LikeCount int64
+	Slug         string
+	PostTitle    string
+	LikeCount    int64
+	ViewCount    int64
+	CommentCount int64
 }
 
 type CommentNotification struct {
-	Slug       string
-	PostTitle  string
-	AuthorName string
-	Body       string
+	Slug         string
+	PostTitle    string
+	AuthorName   string
+	Body         string
+	ViewCount    int64
+	LikeCount    int64
+	CommentCount int64
 }
 
 type PublishedPostNotification struct {
@@ -105,13 +110,18 @@ func (notifier *Notifier) NotifyLike(ctx context.Context, payload LikeNotificati
 				Value: postTitle,
 			},
 			{
-				Name:   "Slug",
-				Value:  normalizeSlug(payload.Slug),
+				Name:   "Likes",
+				Value:  strconv.FormatInt(payload.LikeCount, 10),
 				Inline: true,
 			},
 			{
-				Name:   "Total Likes",
-				Value:  strconv.FormatInt(payload.LikeCount, 10),
+				Name:   "Views",
+				Value:  strconv.FormatInt(payload.ViewCount, 10),
+				Inline: true,
+			},
+			{
+				Name:   "Comments",
+				Value:  strconv.FormatInt(payload.CommentCount, 10),
 				Inline: true,
 			},
 			{
@@ -145,18 +155,33 @@ func (notifier *Notifier) NotifyComment(ctx context.Context, payload CommentNoti
 				Value: postTitle,
 			},
 			{
-				Name:   "Slug",
-				Value:  normalizeSlug(payload.Slug),
-				Inline: true,
-			},
-			{
 				Name:   "Author",
 				Value:  authorName,
 				Inline: true,
 			},
 			{
+				Name:   "Slug",
+				Value:  normalizeSlug(payload.Slug),
+				Inline: true,
+			},
+			{
 				Name:  "Comment",
 				Value: commentBody,
+			},
+			{
+				Name:   "Likes",
+				Value:  strconv.FormatInt(payload.LikeCount, 10),
+				Inline: true,
+			},
+			{
+				Name:   "Views",
+				Value:  strconv.FormatInt(payload.ViewCount, 10),
+				Inline: true,
+			},
+			{
+				Name:   "Comments",
+				Value:  strconv.FormatInt(payload.CommentCount, 10),
+				Inline: true,
 			},
 			{
 				Name:  "Open Blog Post",
