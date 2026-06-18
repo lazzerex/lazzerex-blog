@@ -13,3 +13,6 @@ dist/
 # Editor/OS metadata
 .DS_Store
 Thumbs.db
+
+# Notion cover images downloaded at build time
+public/images/notion-covers/
