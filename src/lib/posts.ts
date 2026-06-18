@@ -1,3 +1,5 @@
+import { writeFile, mkdir, access } from "node:fs/promises";
+import { join, extname } from "node:path";
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
@@ -7,6 +9,39 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
 const DEFAULT_COVER = "/images/folder-bg.jfif";
 const DEFAULT_AUTHOR = "H. S. N. Bình";
+const NOTION_COVERS_DIR = join(process.cwd(), "public", "images", "notion-covers");
+const NOTION_COVERS_WEB_PATH = "/images/notion-covers";
+
+function guessImageExtension(url: string): string {
+  const ext = extname(url.split("?")[0]);
+  return ext || ".jpg";
+}
+
+async function downloadNotionCover(slug: string, url: string): Promise<string | undefined> {
+  const ext = guessImageExtension(url);
+  const filename = `${slug}${ext}`;
+  const localPath = join(NOTION_COVERS_DIR, filename);
+  const webPath = `${NOTION_COVERS_WEB_PATH}/${filename}`;
+
+  try {
+    await access(localPath);
+    return webPath;
+  } catch {
+    // not yet downloaded
+  }
+
+  try {
+    await mkdir(NOTION_COVERS_DIR, { recursive: true });
+    const response = await fetch(url);
+    if (!response.ok) {
+      return undefined;
+    }
+    await writeFile(localPath, Buffer.from(await response.arrayBuffer()));
+    return webPath;
+  } catch {
+    return undefined;
+  }
+}
 const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
   .trim()
   .replace(/\/+$/, "");
@@ -65,7 +100,7 @@ function validateReaderPostSlugs(posts: ReaderPost[], source: string): void {
   }
 }
 
-function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentParser): ReaderPost {
+async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentParser): Promise<ReaderPost> {
   const tags = normalizeTags(post.tags);
   const inferredSummary = extractExcerpt(post.content, 180);
   const summary = post.summary?.trim() || inferredSummary || DEFAULT_SUMMARY;
@@ -74,11 +109,15 @@ function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentParser):
   const isExpiringNotionAsset =
     /^https?:\/\/prod-files-secure\.s3\.[^\s]+/i.test(rawCover) &&
     /[?&]X-Amz-Expires=/i.test(rawCover);
-  const cover =
-    (isExpiringNotionAsset ? localCoverFallback : undefined) ||
-    rawCover ||
-    localCoverFallback ||
-    DEFAULT_COVER;
+
+  let cover: string;
+  if (isExpiringNotionAsset) {
+    const downloaded = await downloadNotionCover(post.slug, rawCover);
+    cover = downloaded || localCoverFallback || DEFAULT_COVER;
+  } else {
+    cover = rawCover || localCoverFallback || DEFAULT_COVER;
+  }
+
   const author = post.author?.trim() || DEFAULT_AUTHOR;
   const notionUrl = resolvePublishedNotionUrl(post.title, post.notionUrl);
 
@@ -157,7 +196,7 @@ export async function getAllPosts(forceRefresh = false): Promise<ReaderPost[]> {
 
   const parser = new MarkdownContentParser();
   const notionPosts = await fetchNotionPublishedPosts();
-  const posts = notionPosts.map((post) => mapNotionToReaderPost(post, parser));
+  const posts = await Promise.all(notionPosts.map((post) => mapNotionToReaderPost(post, parser)));
 
   validateReaderPostSlugs(posts, "Notion");
 
