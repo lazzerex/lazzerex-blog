@@ -524,6 +524,25 @@ func (store *Store) UpsertPublishedPost(ctx context.Context, payload PublishedPo
 	}, nil
 }
 
+func (store *Store) GetCommentCount(ctx context.Context, slug string) (int64, error) {
+	normalizedSlug := strings.TrimSpace(strings.ToLower(slug))
+	if !ValidateSlug(normalizedSlug) {
+		return 0, ErrInvalidSlug
+	}
+
+	var count int64
+	err := store.dbConn.QueryRowContext(ctx, store.q(`
+		SELECT COUNT(*)
+		FROM post_comments
+		WHERE slug = ? AND status = 'approved'
+	`), normalizedSlug).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (store *Store) MarkPublishedPostNotified(ctx context.Context, slug string) error {
 	normalizedSlug := strings.TrimSpace(strings.ToLower(slug))
 	if !ValidateSlug(normalizedSlug) {
