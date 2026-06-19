@@ -2,7 +2,7 @@ name: Keep Render service alive
 
 on:
   schedule:
-    - cron: '*/14 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,5 +12,5 @@ jobs:
       - name: Ping Render service health endpoint
         run: |
           curl --silent https://lazzerex-blog-web-service.onrender.com/health || true
-          sleep 60
+          sleep 40
           curl --fail --silent --show-error https://lazzerex-blog-web-service.onrender.com/health
