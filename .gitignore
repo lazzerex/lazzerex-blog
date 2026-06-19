@@ -14,5 +14,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Notion cover images downloaded at build time
+# Notion images downloaded at build time
 public/images/notion-covers/
+public/images/notion-content/
