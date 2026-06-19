@@ -1,5 +1,5 @@
 import { writeFile, mkdir, access } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { join, extname, dirname } from "node:path";
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
@@ -12,23 +12,21 @@ const DEFAULT_AUTHOR = "H. S. N. Bình";
 const NOTION_COVERS_PUBLIC_DIR = join(process.cwd(), "public", "images", "notion-covers");
 const NOTION_COVERS_DIST_DIR = join(process.cwd(), "dist", "images", "notion-covers");
 const NOTION_COVERS_WEB_PATH = "/images/notion-covers";
+const NOTION_CONTENT_PUBLIC_DIR = join(process.cwd(), "public", "images", "notion-content");
+const NOTION_CONTENT_DIST_DIR = join(process.cwd(), "dist", "images", "notion-content");
+const NOTION_CONTENT_WEB_PATH = "/images/notion-content";
 
 function guessImageExtension(url: string): string {
   const ext = extname(url.split("?")[0]);
   return ext || ".jpg";
 }
 
-async function downloadNotionCover(slug: string, url: string): Promise<string | undefined> {
-  const ext = guessImageExtension(url);
-  const filename = `${slug}${ext}`;
-  const publicPath = join(NOTION_COVERS_PUBLIC_DIR, filename);
-  const webPath = `${NOTION_COVERS_WEB_PATH}/${filename}`;
-
+async function downloadNotionAsset(publicPath: string, distPath: string, webPath: string, url: string): Promise<string | undefined> {
   try {
     await access(publicPath);
     return webPath;
   } catch {
-    // not yet downloaded
+    // not cached yet
   }
 
   try {
@@ -37,21 +35,38 @@ async function downloadNotionCover(slug: string, url: string): Promise<string | 
       return undefined;
     }
     const buffer = Buffer.from(await response.arrayBuffer());
-
-    await mkdir(NOTION_COVERS_PUBLIC_DIR, { recursive: true });
+    await mkdir(dirname(publicPath), { recursive: true });
     await writeFile(publicPath, buffer);
-
     // Astro copies public/ to dist/ before page generation runs in prod builds,
     // so also write directly to dist/ to ensure the image is in the final output.
     if (!import.meta.env.DEV) {
-      await mkdir(NOTION_COVERS_DIST_DIR, { recursive: true });
-      await writeFile(join(NOTION_COVERS_DIST_DIR, filename), buffer);
+      await mkdir(dirname(distPath), { recursive: true });
+      await writeFile(distPath, buffer);
     }
-
     return webPath;
   } catch {
     return undefined;
   }
+}
+
+async function downloadNotionCover(slug: string, url: string): Promise<string | undefined> {
+  const filename = `${slug}${guessImageExtension(url)}`;
+  return downloadNotionAsset(
+    join(NOTION_COVERS_PUBLIC_DIR, filename),
+    join(NOTION_COVERS_DIST_DIR, filename),
+    `${NOTION_COVERS_WEB_PATH}/${filename}`,
+    url
+  );
+}
+
+async function downloadNotionContentImage(slug: string, index: number, url: string): Promise<string | undefined> {
+  const filename = `${slug}-${index}${guessImageExtension(url)}`;
+  return downloadNotionAsset(
+    join(NOTION_CONTENT_PUBLIC_DIR, filename),
+    join(NOTION_CONTENT_DIST_DIR, filename),
+    `${NOTION_CONTENT_WEB_PATH}/${filename}`,
+    url
+  );
 }
 const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
   .trim()
@@ -132,6 +147,19 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
   const author = post.author?.trim() || DEFAULT_AUTHOR;
   const notionUrl = resolvePublishedNotionUrl(post.title, post.notionUrl);
 
+  const rawBlocks = post.blocks.length > 0 ? post.blocks : parser.parse(post.content);
+  const blocks = await Promise.all(
+    rawBlocks.map(async (block, index) => {
+      if (block.type !== "image") return block;
+      const isExpiring =
+        /^https?:\/\/prod-files-secure\.s3\.[^\s]+/i.test(block.src) &&
+        /[?&]X-Amz-Expires=/i.test(block.src);
+      if (!isExpiring) return block;
+      const downloaded = await downloadNotionContentImage(post.slug, index, block.src);
+      return downloaded ? { ...block, src: downloaded } : block;
+    })
+  );
+
   return {
     title: post.title,
     slug: post.slug,
@@ -144,7 +172,7 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
     cover,
     notionUrl,
     content: post.content,
-    blocks: post.blocks.length > 0 ? post.blocks : parser.parse(post.content)
+    blocks
   };
 }
 
