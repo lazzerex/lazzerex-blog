@@ -58,6 +58,20 @@ func run() error {
 	discordNotifier := discord.NewNotifier(cfg.DiscordWebhookURL, cfg.DiscordRequestTimeout, logger)
 	server := api.NewServer(cfg, logger, storeLayer, discordNotifier)
 
+	if cfg.DBDriver == "postgres" {
+		go func() {
+			ticker := time.NewTicker(4 * time.Minute)
+			defer ticker.Stop()
+			for range ticker.C {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				if err := storeLayer.Ping(ctx); err != nil {
+					logger.Warn("db keepalive ping failed", "error", err)
+				}
+				cancel()
+			}
+		}()
+	}
+
 	httpServer := &http.Server{
 		Addr:              cfg.Address,
 		Handler:           server.Handler(),
