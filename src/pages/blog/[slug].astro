@@ -141,7 +141,12 @@ const ogImage = (() => {
             }
 
             if (block.type === "image") {
-              return <img src={block.src} alt={block.alt || "Article image"} loading="lazy" />;
+              return (
+                <figure>
+                  <img src={block.src} alt={block.alt || "Article image"} loading="lazy" />
+                  {block.alt && <figcaption>{block.alt}</figcaption>}
+                </figure>
+              );
             }
 
             if (block.type === "divider") {
