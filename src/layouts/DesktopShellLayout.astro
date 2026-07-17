@@ -9,6 +9,7 @@ interface Props {
   ogImage?: string;
   canonicalUrl?: string;
   currentPath: string;
+  expand?: boolean;
 }
 
 const {
@@ -17,12 +18,13 @@ const {
   ogType,
   ogImage,
   canonicalUrl,
-  currentPath
+  currentPath,
+  expand
 } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} ogType={ogType} ogImage={ogImage} canonicalUrl={canonicalUrl}>
-  <AppShell currentPath={currentPath}>
+  <AppShell currentPath={currentPath} expand={expand}>
     <slot />
   </AppShell>
 </BaseLayout>
