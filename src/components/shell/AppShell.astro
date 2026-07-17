@@ -5,13 +5,14 @@ import DockBar from "./DockBar.astro";
 
 interface Props {
   currentPath: string;
+  expand?: boolean;
 }
 
-const { currentPath } = Astro.props;
+const { currentPath, expand = false } = Astro.props;
 ---
 
 <div class="page-frame">
-  <div class="shell-container">
+  <div class:list={["shell-container", { "is-expanded": expand }]}>
     <TopBar />
 
     <div class="shell-body">
