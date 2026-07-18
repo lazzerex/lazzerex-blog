@@ -109,6 +109,60 @@ body.is-navigating .shell-container {
   }
 }
 
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 50;
+  background: transparent;
+  pointer-events: none;
+}
+
+.reading-progress-bar {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reading-progress-bar {
+    transition: transform 100ms linear;
+  }
+}
+
+.back-to-top {
+  position: fixed;
+  right: clamp(16px, 2.5vw, 32px);
+  bottom: clamp(16px, 2.5vw, 32px);
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-surface);
+  color: var(--color-text-secondary);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.back-to-top:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.back-to-top:active {
+  transform: scale(0.94);
+}
+
 .shell-container.is-expanded {
   height: auto;
   min-height: calc(100vh - (var(--space-2) * 2));
