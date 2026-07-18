@@ -1,5 +1,6 @@
 import { writeFile, mkdir, access } from "node:fs/promises";
-import { join, extname, dirname } from "node:path";
+import { join, dirname } from "node:path";
+import sharp from "sharp";
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
@@ -15,57 +16,113 @@ const NOTION_COVERS_WEB_PATH = "/images/notion-covers";
 const NOTION_CONTENT_PUBLIC_DIR = join(process.cwd(), "public", "images", "notion-content");
 const NOTION_CONTENT_DIST_DIR = join(process.cwd(), "dist", "images", "notion-content");
 const NOTION_CONTENT_WEB_PATH = "/images/notion-content";
+const COVER_IMAGE_MAX_WIDTH = 1600;
+const CONTENT_IMAGE_MAX_WIDTH = 1400;
+const WEBP_QUALITY = 80;
 
-function guessImageExtension(url: string): string {
-  const ext = extname(url.split("?")[0]);
-  return ext || ".jpg";
+interface OptimizedImage {
+  path: string;
+  width: number;
+  height: number;
 }
 
-async function downloadNotionAsset(publicPath: string, distPath: string, webPath: string, url: string): Promise<string | undefined> {
+const MAX_CONCURRENT_IMAGE_DOWNLOADS = 6;
+const IMAGE_DOWNLOAD_ATTEMPTS = 2;
+
+function createLimiter(maxConcurrent: number) {
+  let active = 0;
+  const queue: (() => void)[] = [];
+
+  return function limit<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const run = () => {
+        active += 1;
+        fn()
+          .then(resolve, reject)
+          .finally(() => {
+            active -= 1;
+            queue.shift()?.();
+          });
+      };
+
+      if (active < maxConcurrent) {
+        run();
+      } else {
+        queue.push(run);
+      }
+    });
+  };
+}
+
+const limitImageDownload = createLimiter(MAX_CONCURRENT_IMAGE_DOWNLOADS);
+
+async function downloadNotionAsset(
+  publicPath: string,
+  distPath: string,
+  webPath: string,
+  url: string,
+  maxWidth: number
+): Promise<OptimizedImage | undefined> {
   try {
     await access(publicPath);
-    return webPath;
+    const metadata = await sharp(publicPath).metadata();
+    return { path: webPath, width: metadata.width ?? 0, height: metadata.height ?? 0 };
   } catch {
     // not cached yet
   }
 
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return undefined;
+  return limitImageDownload(async () => {
+    for (let attempt = 1; attempt <= IMAGE_DOWNLOAD_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          continue;
+        }
+        const original = Buffer.from(await response.arrayBuffer());
+        const { data, info } = await sharp(original)
+          .resize({ width: maxWidth, withoutEnlargement: true })
+          .webp({ quality: WEBP_QUALITY })
+          .toBuffer({ resolveWithObject: true });
+
+        await mkdir(dirname(publicPath), { recursive: true });
+        await writeFile(publicPath, data);
+        // Astro copies public/ to dist/ before page generation runs in prod builds,
+        // so also write directly to dist/ to ensure the image is in the final output.
+        if (!import.meta.env.DEV) {
+          await mkdir(dirname(distPath), { recursive: true });
+          await writeFile(distPath, data);
+        }
+        return { path: webPath, width: info.width, height: info.height };
+      } catch {
+        // retry
+      }
     }
-    const buffer = Buffer.from(await response.arrayBuffer());
-    await mkdir(dirname(publicPath), { recursive: true });
-    await writeFile(publicPath, buffer);
-    // Astro copies public/ to dist/ before page generation runs in prod builds,
-    // so also write directly to dist/ to ensure the image is in the final output.
-    if (!import.meta.env.DEV) {
-      await mkdir(dirname(distPath), { recursive: true });
-      await writeFile(distPath, buffer);
-    }
-    return webPath;
-  } catch {
+
+    console.warn(`[image-pipeline] Failed to download/optimize asset after ${IMAGE_DOWNLOAD_ATTEMPTS} attempts: ${url.split("?")[0]}`);
     return undefined;
-  }
+  });
 }
 
 async function downloadNotionCover(slug: string, url: string): Promise<string | undefined> {
-  const filename = `${slug}${guessImageExtension(url)}`;
-  return downloadNotionAsset(
+  const filename = `${slug}.webp`;
+  const result = await downloadNotionAsset(
     join(NOTION_COVERS_PUBLIC_DIR, filename),
     join(NOTION_COVERS_DIST_DIR, filename),
     `${NOTION_COVERS_WEB_PATH}/${filename}`,
-    url
+    url,
+    COVER_IMAGE_MAX_WIDTH
   );
+  return result?.path;
 }
 
-async function downloadNotionContentImage(slug: string, index: number, url: string): Promise<string | undefined> {
-  const filename = `${slug}-${index}${guessImageExtension(url)}`;
+async function downloadNotionContentImage(slug: string, index: number, url: string): Promise<OptimizedImage | undefined> {
+  const filename = `${slug}-${index}.webp`;
   return downloadNotionAsset(
     join(NOTION_CONTENT_PUBLIC_DIR, filename),
     join(NOTION_CONTENT_DIST_DIR, filename),
     `${NOTION_CONTENT_WEB_PATH}/${filename}`,
-    url
+    url,
+    CONTENT_IMAGE_MAX_WIDTH
   );
 }
 const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
@@ -156,7 +213,7 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
         /[?&]X-Amz-Expires=/i.test(block.src);
       if (!isExpiring) return block;
       const downloaded = await downloadNotionContentImage(post.slug, index, block.src);
-      return downloaded ? { ...block, src: downloaded } : block;
+      return downloaded ? { ...block, src: downloaded.path, width: downloaded.width, height: downloaded.height } : block;
     })
   );
 
