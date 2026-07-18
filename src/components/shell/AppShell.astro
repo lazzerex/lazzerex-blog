@@ -2,6 +2,7 @@
 import TopBar from "./TopBar.astro";
 import SidebarNav from "./SidebarNav.astro";
 import DockBar from "./DockBar.astro";
+import { ArrowUp } from "lucide-astro";
 
 interface Props {
   currentPath: string;
@@ -10,6 +11,14 @@ interface Props {
 
 const { currentPath, expand = false } = Astro.props;
 ---
+
+{
+  expand && (
+    <div class="reading-progress" aria-hidden="true">
+      <div class="reading-progress-bar" data-reading-progress />
+    </div>
+  )
+}
 
 <div class="page-frame">
   <div class:list={["shell-container", { "is-expanded": expand }]}>
@@ -26,3 +35,41 @@ const { currentPath, expand = false } = Astro.props;
     <DockBar currentPath={currentPath} />
   </div>
 </div>
+
+{
+  expand && (
+    <button type="button" class="back-to-top" data-back-to-top aria-label="Back to top" hidden>
+      <ArrowUp size={18} strokeWidth={2} />
+    </button>
+  )
+}
+
+<script>
+  const progressBar = document.querySelector<HTMLElement>("[data-reading-progress]");
+  const backToTopButton = document.querySelector<HTMLButtonElement>("[data-back-to-top]");
+
+  if (progressBar || backToTopButton) {
+    const updateOnScroll = () => {
+      const scrollTop = window.scrollY;
+
+      if (progressBar) {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollable > 0 ? Math.min(1, Math.max(0, scrollTop / scrollable)) : 0;
+        progressBar.style.transform = `scaleX(${ratio})`;
+      }
+
+      if (backToTopButton) {
+        backToTopButton.hidden = scrollTop < 480;
+      }
+    };
+
+    window.addEventListener("scroll", updateOnScroll, { passive: true });
+    window.addEventListener("resize", updateOnScroll);
+    updateOnScroll();
+
+    backToTopButton?.addEventListener("click", () => {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+    });
+  }
+</script>
