@@ -88,7 +88,9 @@ const ogImage = (() => {
           alt={`Cover image for ${post.title}`}
           width="1200"
           height="675"
-          loading="lazy"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
         />
       </div>
 
@@ -144,7 +146,14 @@ const ogImage = (() => {
             if (block.type === "image") {
               return (
                 <figure>
-                  <img src={block.src} alt={block.alt || "Article image"} loading="lazy" />
+                  <img
+                    src={block.src}
+                    alt={block.alt || "Article image"}
+                    width={block.width}
+                    height={block.height}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   {block.alt && <figcaption>{block.alt}</figcaption>}
                 </figure>
               );
