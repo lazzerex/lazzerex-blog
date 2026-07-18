@@ -136,6 +136,24 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric"
 });
 
+const READING_WORDS_PER_MINUTE = 220;
+
+function estimateReadTimeMinutes(blocks: RichContentBlock[]): number {
+  const wordCount = blocks.reduce((total, block) => {
+    if (
+      block.type === "paragraph" ||
+      block.type === "heading" ||
+      block.type === "quote" ||
+      block.type === "list-item"
+    ) {
+      return total + block.text.trim().split(/\s+/).filter(Boolean).length;
+    }
+    return total;
+  }, 0);
+
+  return Math.max(1, Math.round(wordCount / READING_WORDS_PER_MINUTE));
+}
+
 export interface ExplorerPost {
   title: string;
   slug: string;
@@ -152,6 +170,7 @@ export interface ExplorerPost {
 export interface ReaderPost extends ExplorerPost {
   content: string;
   blocks: RichContentBlock[];
+  readTimeMinutes: number;
 }
 
 let cachedPosts: ReaderPost[] | null = null;
@@ -229,7 +248,8 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
     cover,
     notionUrl,
     content: post.content,
-    blocks
+    blocks,
+    readTimeMinutes: estimateReadTimeMinutes(blocks)
   };
 }
 
