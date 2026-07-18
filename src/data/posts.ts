@@ -159,12 +159,12 @@ const publishedNotionUrlByPageId = new Map<string, string>();
 const publishedNotionUrlByTitle = new Map<string, string>();
 const localCoverBySlug = new Map<string, string>([
   ["the-girl-from-the-other-side", "/images/thegirlfromtheotherside.jpg"],
-  ["the-backdoor-that-almost-broke-the-internet", "/images/linux.png"],
+  ["the-backdoor-that-almost-broke-the-internet", "/images/linux.jpg"],
   ["getting-to-know-os", "/images/os.jpg"],
   ["the-secret-behind-codes", "/images/hardware.jfif"],
   ["coding-the-cosmos", "/images/black-hole.jpg"],
   ["the-foundation-of-ai-problem-solving", "/images/dfs_bfs.png"],
-  ["my-solution-leetcode-231", "/images/leetcode.png"],
+  ["my-solution-leetcode-231", "/images/leetcode.jpg"],
   ["what-is-an-operating-system", "/images/operating-system.jpg"],
   ["the-bittersweet-beauty-of-youth", "/images/sakurazuki-thumbnail.jpg"],
   ["understanding-ai-concept", "/images/ai-thumbnail.jpg"],
@@ -172,9 +172,9 @@ const localCoverBySlug = new Map<string, string>([
   ["the-art-of-leitmotif", "/images/undertale.webp"],
   ["model-context-protocol", "/images/mcp.jpg"],
   ["the-system-architecture-of-nes", "/images/nes.jpg"],
-  ["my-solution-to-leetcode-1353", "/images/leetcode.png"],
+  ["my-solution-to-leetcode-1353", "/images/leetcode.jpg"],
   ["asynchronous-programming", "/images/async.png"],
-  ["time-crystal", "/images/time.png"]
+  ["time-crystal", "/images/time.jpg"]
 ]);
 
 for (const post of postSummaries) {
