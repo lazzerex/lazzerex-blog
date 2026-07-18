@@ -12,7 +12,8 @@
     "@lucide/astro": "^1.8.0",
     "@notionhq/client": "^5.17.0",
     "astro": "^5.8.1",
-    "lucide-astro": "^0.556.0"
+    "lucide-astro": "^0.556.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",
