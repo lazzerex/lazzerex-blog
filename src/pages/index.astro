@@ -42,7 +42,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
               data-preview-date={post.dateLabel}
               data-preview-author={post.author}
             >
-              <a class="article-name" href={`/blog/${post.slug}`} role="cell">
+              <a class="article-name" href={`/blog/${post.slug}`} role="cell" data-astro-prefetch>
                 <FileText size={16} strokeWidth={1.5} color="var(--color-text-muted)" />
                 <span class="article-title">{post.title}</span>
               </a>
