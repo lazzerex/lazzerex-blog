@@ -69,6 +69,8 @@ const ogImage = (() => {
           <span class="reader-meta-dot" aria-hidden="true">•</span>
           <time datetime={post.date.toISOString()}>{post.dateLabel}</time>
           <span class="reader-meta-dot" aria-hidden="true">•</span>
+          <span>{post.readTimeMinutes} min read</span>
+          <span class="reader-meta-dot" aria-hidden="true">•</span>
           <span><span data-view-count>--</span> views</span>
         </p>
         <ul class="reader-tags" aria-label="Post tags">
