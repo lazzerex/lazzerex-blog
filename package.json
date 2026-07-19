@@ -9,6 +9,7 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
     "@lucide/astro": "^1.8.0",
     "@notionhq/client": "^5.17.0",
     "astro": "^5.8.1",
