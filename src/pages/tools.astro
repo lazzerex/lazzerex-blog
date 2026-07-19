@@ -41,7 +41,7 @@ import { tools, GITHUB_USERNAME } from "../data/projects";
                 {tool.language.name}
               </span>
               {tool.license && <span>{tool.license} License</span>}
-              <span>Updated {tool.updated}</span>
+              {tool.updated && <span>Updated {tool.updated}</span>}
             </div>
           </li>
         ))
