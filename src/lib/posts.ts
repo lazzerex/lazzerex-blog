@@ -155,6 +155,35 @@ function estimateReadTimeMinutes(blocks: RichContentBlock[]): number {
   return Math.max(1, Math.round(wordCount / READING_WORDS_PER_MINUTE));
 }
 
+function slugifyHeading(text: string): string {
+  const slug = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "section";
+}
+
+function assignHeadingIds(blocks: RichContentBlock[]): { blocks: RichContentBlock[]; toc: TocEntry[] } {
+  const seen = new Map<string, number>();
+  const toc: TocEntry[] = [];
+
+  const nextBlocks = blocks.map((block) => {
+    if (block.type !== "heading") return block;
+
+    const base = slugifyHeading(block.text);
+    const occurrence = seen.get(base) ?? 0;
+    seen.set(base, occurrence + 1);
+    const id = occurrence === 0 ? base : `${base}-${occurrence + 1}`;
+
+    toc.push({ id, text: block.text, level: block.level });
+    return { ...block, id };
+  });
+
+  return { blocks: nextBlocks, toc };
+}
+
 export interface ExplorerPost {
   title: string;
   slug: string;
@@ -168,10 +197,17 @@ export interface ExplorerPost {
   notionUrl?: string;
 }
 
+export interface TocEntry {
+  id: string;
+  text: string;
+  level: number;
+}
+
 export interface ReaderPost extends ExplorerPost {
   content: string;
   blocks: RichContentBlock[];
   readTimeMinutes: number;
+  toc: TocEntry[];
 }
 
 let cachedPosts: ReaderPost[] | null = null;
@@ -243,6 +279,8 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
     })
   );
 
+  const { blocks: blocksWithHeadingIds, toc } = assignHeadingIds(blocks);
+
   return {
     title: post.title,
     slug: post.slug,
@@ -255,8 +293,9 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
     cover,
     notionUrl,
     content: post.content,
-    blocks,
-    readTimeMinutes: estimateReadTimeMinutes(blocks)
+    blocks: blocksWithHeadingIds,
+    readTimeMinutes: estimateReadTimeMinutes(blocks),
+    toc
   };
 }
 
