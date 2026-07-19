@@ -9,7 +9,7 @@ import { resolveLocalCoverBySlug, resolvePublishedNotionUrl } from "../data/post
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 const DEFAULT_SUMMARY = "Summary will be available soon.";
-const DEFAULT_COVER = "/images/folder-bg.jfif";
+const DEFAULT_COVER = "/images/folder-bg.jpg";
 const DEFAULT_AUTHOR = "H. S. N. Bình";
 const NOTION_COVERS_PUBLIC_DIR = join(process.cwd(), "public", "images", "notion-covers");
 const NOTION_COVERS_DIST_DIR = join(process.cwd(), "dist", "images", "notion-covers");

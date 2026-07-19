@@ -161,7 +161,7 @@ const localCoverBySlug = new Map<string, string>([
   ["the-girl-from-the-other-side", "/images/thegirlfromtheotherside.jpg"],
   ["the-backdoor-that-almost-broke-the-internet", "/images/linux.jpg"],
   ["getting-to-know-os", "/images/os.jpg"],
-  ["the-secret-behind-codes", "/images/hardware.jfif"],
+  ["the-secret-behind-codes", "/images/hardware.jpg"],
   ["coding-the-cosmos", "/images/black-hole.jpg"],
   ["the-foundation-of-ai-problem-solving", "/images/dfs_bfs.png"],
   ["my-solution-leetcode-231", "/images/leetcode.jpg"],
