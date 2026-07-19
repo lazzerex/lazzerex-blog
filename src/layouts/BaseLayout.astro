@@ -33,6 +33,7 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
     <title>{title}</title>
     <meta name="description" content={description} />
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="alternate" type="application/rss+xml" title="Lazzerex Blog RSS Feed" href="/rss.xml" />
 
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
