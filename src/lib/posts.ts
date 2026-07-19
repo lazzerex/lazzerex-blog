@@ -2,6 +2,7 @@ import { writeFile, mkdir, access } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import sharp from "sharp";
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
+import { highlightCode } from "./code-highlight";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
 import { resolveLocalCoverBySlug, resolvePublishedNotionUrl } from "../data/posts";
@@ -226,6 +227,11 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
   const rawBlocks = post.blocks.length > 0 ? post.blocks : parser.parse(post.content);
   const blocks = await Promise.all(
     rawBlocks.map(async (block, index) => {
+      if (block.type === "code") {
+        const html = await highlightCode(block.code, block.language);
+        return html ? { ...block, html } : block;
+      }
+
       if (block.type !== "image") return block;
       const isExpiring =
         /^https?:\/\/prod-files-secure\.s3\.[^\s]+/i.test(block.src) &&
