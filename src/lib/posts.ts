@@ -2,7 +2,7 @@ import { writeFile, mkdir, access } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import sharp from "sharp";
 import { MarkdownContentParser, extractExcerpt, type RichContentBlock } from "./content-parser";
-import { highlightCode } from "./code-highlight";
+import { highlightCode, applyLanguageOverride } from "./code-highlight";
 import { fetchNotionPublishedPosts, hasNotionConfig, type NotionPost } from "./notion";
 import { normalizeTags } from "./tags";
 import { resolveLocalCoverBySlug, resolvePublishedNotionUrl } from "../data/posts";
@@ -228,8 +228,9 @@ async function mapNotionToReaderPost(post: NotionPost, parser: MarkdownContentPa
   const blocks = await Promise.all(
     rawBlocks.map(async (block, index) => {
       if (block.type === "code") {
-        const html = await highlightCode(block.code, block.language);
-        return html ? { ...block, html } : block;
+        const { code, language } = applyLanguageOverride(block.code, block.language);
+        const html = await highlightCode(code, language);
+        return { ...block, code, language, html };
       }
 
       if (block.type !== "image") return block;
