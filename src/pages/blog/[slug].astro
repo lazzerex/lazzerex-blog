@@ -141,7 +141,13 @@ const ogImage = (() => {
 
             if (block.type === "code") {
               return (
-                <pre data-language={block.language || undefined}><code>{block.code}</code></pre>
+                <div class="code-block" data-language={block.language || undefined}>
+                  {block.html ? (
+                    <Fragment set:html={block.html} />
+                  ) : (
+                    <pre><code>{block.code}</code></pre>
+                  )}
+                </div>
               );
             }
 
