@@ -23,7 +23,8 @@ const BUNDLED_LANGS = [
   "jsx",
   "tsx",
   "php",
-  "ruby"
+  "ruby",
+  "proto"
 ];
 
 const LANGUAGE_ALIASES: Record<string, string> = {
@@ -32,7 +33,10 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   sh: "bash",
   shell: "bash",
   yml: "yaml",
-  md: "markdown"
+  md: "markdown",
+  protobuf: "proto",
+  protocolbuffers: "proto",
+  "protocol buffers": "proto"
 };
 
 let highlighterPromise: Promise<Highlighter> | null = null;
