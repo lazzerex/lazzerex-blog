@@ -1,6 +1,7 @@
 ---
 import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
 import { getExplorerPosts } from "../lib/posts";
+import { getTagColor } from "../lib/tags";
 import { ChevronLeft, ChevronRight, FileText } from 'lucide-astro';
 
 const postSummaries = await getExplorerPosts();
@@ -33,20 +34,25 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
             <li
               class="article-row"
               role="row"
+              style={`--row-accent:${getTagColor(post.primaryTag)}`}
               data-row-index={index}
               data-post-slug={post.slug}
               data-preview-title={post.title}
               data-preview-cover={post.cover}
               data-preview-summary={post.summary}
               data-preview-tags={post.tags.join(", ")}
+              data-preview-color={getTagColor(post.primaryTag)}
               data-preview-date={post.dateLabel}
               data-preview-author={post.author}
             >
               <a class="article-name" href={`/blog/${post.slug}`} role="cell" data-astro-prefetch>
-                <FileText size={16} strokeWidth={1.5} color="var(--color-text-muted)" />
+                <FileText size={16} strokeWidth={1.5} color="var(--row-accent)" />
                 <span class="article-title">{post.title}</span>
               </a>
-              <span class="article-category" role="cell">{post.primaryTag}</span>
+              <span class="article-category" role="cell">
+                <span class="category-dot language-dot" style={`background:${getTagColor(post.primaryTag)}`} />
+                {post.primaryTag}
+              </span>
               <span class="article-date" role="cell">{post.dateLabel}</span>
             </li>
           ))
@@ -97,7 +103,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 
     <aside class="article-hover-preview" data-article-preview aria-hidden="true">
       <div class="article-hover-preview-media">
-        <img src="/images/folder-bg.jfif" alt="" loading="lazy" data-preview-image />
+        <img src="/images/folder-bg.jpg" alt="" loading="lazy" data-preview-image />
         <div class="article-hover-preview-spinner" data-preview-spinner aria-hidden="true">
           <span class="spinner-ring" aria-hidden="true"></span>
         </div>
@@ -190,7 +196,7 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 
         previewRequestId += 1;
         const requestId = previewRequestId;
-        const fallbackCover = '/images/folder-bg.jfif';
+        const fallbackCover = '/images/folder-bg.jpg';
         const normalizedCover = cover || fallbackCover;
 
         setPreviewLoading(true);
@@ -261,17 +267,19 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
         }
 
         const title = row.getAttribute('data-preview-title') || 'Untitled article';
-        const cover = row.getAttribute('data-preview-cover') || '/images/folder-bg.jfif';
+        const cover = row.getAttribute('data-preview-cover') || '/images/folder-bg.jpg';
         const summary = row.getAttribute('data-preview-summary') || 'No summary available for this article yet.';
         const tags = row.getAttribute('data-preview-tags') || 'General';
         const date = row.getAttribute('data-preview-date') || '';
         const author = row.getAttribute('data-preview-author') || 'H. S. N. Bình';
+        const tagColor = row.getAttribute('data-preview-color') || '';
 
         previewTitle.textContent = title;
         previewDate.textContent = date;
         previewAuthor.textContent = author;
         previewSummary.textContent = summary;
         previewTags.textContent = tags;
+        previewTags.style.setProperty('--preview-tag-color', tagColor);
 
         loadPreviewImage(cover, title);
 
