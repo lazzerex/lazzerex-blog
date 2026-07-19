@@ -7,6 +7,8 @@
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat&logo=node.js&logoColor=white"/>
   <img src="https://img.shields.io/badge/npm-CLI-CB3837?style=flat&logo=npm&logoColor=white"/>
   <img src="https://img.shields.io/badge/Lucide-Icons-f97316?style=flat"/>
+  <img src="https://img.shields.io/badge/Shiki-Syntax%20Highlighting-654FF0?style=flat"/>
+  <img src="https://img.shields.io/badge/Sharp-Image%20Pipeline-99CC00?style=flat"/>
   <img src="https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white"/>
   <img src="https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white"/>
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white"/>
@@ -28,6 +30,8 @@ The personal part is simple: this is where I publish my learning journey.
 - Language: TypeScript
 - Content source: Notion API (`@notionhq/client`)
 - Icons: Lucide (`@lucide/astro`, `lucide-astro`)
+- Syntax highlighting: Shiki
+- Image processing: Sharp
 - Runtime/tooling: Node.js 20+, npm
 - API service: Go 1.22+
 - Runtime persistence: SQLite (default) or PostgreSQL (Neon-ready)
@@ -39,8 +43,15 @@ The personal part is simple: this is where I publish my learning journey.
 - Notion-only content pipeline (build fails fast if env is missing)
 - Static route generation for each post at `/blog/[slug]`
 - Build-time slug validation and collision checks
-- SEO tags: canonical, Open Graph, Twitter
+- SEO tags: canonical, Open Graph, Twitter, plus `sitemap.xml` and `robots.txt`
+- RSS feed at `/rss.xml`
 - Componentized shell layout with responsive behavior
+- Build-time image pipeline: Notion images and static covers are resized and converted to webp, with width and height set to avoid layout shift
+- Server-rendered code block syntax highlighting via Shiki, with a manual language override for languages Notion does not support
+- Per-post table of contents, generated from heading blocks with stable anchor ids
+- Related posts (by shared tags) and adjacent post navigation on each article
+- Hover-based link prefetching on the article list
+- Reading progress bar, back to top button, and estimated read time on article pages
 
 ## Architecture Overview
 
@@ -55,6 +66,10 @@ Primary routes:
 - `/blog/[slug]` article detail page
 - `/about` author profile page
 - `/contact` contact page
+- `/projects` project showcase, sourced from `src/data/projects.ts`
+- `/tools` smaller utilities and side tools, sourced from `src/data/projects.ts`
+- `/rss.xml` RSS feed
+- `/sitemap-index.xml` sitemap
 
 ## Content Publishing Flow (Notion)
 
@@ -154,9 +169,13 @@ Recommended:
 Core libraries:
 
 - `astro`
+- `@astrojs/rss`
+- `@astrojs/sitemap`
 - `@notionhq/client`
 - `@lucide/astro`
 - `lucide-astro`
+- `shiki`
+- `sharp`
 
 ## Deployment
 
