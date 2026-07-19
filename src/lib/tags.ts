@@ -10,6 +10,25 @@ const TAG_ALIASES: Record<string, string> = {
 
 const EMPTY_TAG_FALLBACK = "General";
 
+const TAG_COLORS: Record<string, string> = {
+  Programming: "#7ee3b0",
+  Physics: "#b39dff",
+  Music: "#ff8fa3",
+  "Artificial Intelligence": "#6fd6c9",
+  Gaming: "#ffb86b",
+  NES: "#ffb86b",
+  Manga: "#f0d264",
+  Linux: "#8ecbff",
+  "Operating System": "#ff9d6b",
+  Hardware: "#ff9d6b",
+  Math: "#a8d977",
+  "Cyber Security": "#ff7a7a",
+  "System Architecture": "#d99bd9",
+  Surrealism: "#d99bd9"
+};
+
+const DEFAULT_TAG_COLOR = "var(--color-accent)";
+
 function toTitleCase(value: string): string {
   return value
     .split(" ")
@@ -30,6 +49,10 @@ export function normalizeTag(rawTag: string): string {
   }
 
   return toTitleCase(key);
+}
+
+export function getTagColor(tag: string): string {
+  return TAG_COLORS[tag] ?? DEFAULT_TAG_COLOR;
 }
 
 export function normalizeTags(rawTags: string[]): string[] {
