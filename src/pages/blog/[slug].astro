@@ -1,6 +1,7 @@
 ---
 import DesktopShellLayout from "../../layouts/DesktopShellLayout.astro";
 import { getAllPosts, getPostBySlug } from "../../lib/posts";
+import { getTagColor } from "../../lib/tags";
 
 export async function getStaticPaths() {
   const posts = await getAllPosts();
@@ -66,7 +67,7 @@ const relatedPosts = allPosts
   expand
 >
   <section class="content-window article-window detail-window">
-    <div class="window-path has-glass-toggle">
+    <div class="window-path">
       <p class="window-path-segments" aria-label="Breadcrumb">
         <a href="/">Home</a>
         <span class="path-muted">→</span>
@@ -74,7 +75,6 @@ const relatedPosts = allPosts
         <span class="path-muted">→</span>
         <span>{post.title}</span>
       </p>
-      <button type="button" class="glass-toggle" data-glass-toggle aria-pressed="true">Glass: On</button>
     </div>
 
     <article class="reader-article">
@@ -92,7 +92,7 @@ const relatedPosts = allPosts
         <ul class="reader-tags" aria-label="Post tags">
           {
             post.tags.map((tag) => (
-              <li>{tag}</li>
+              <li style={`--tag-color:${getTagColor(tag)}`}>{tag}</li>
             ))
           }
         </ul>
@@ -809,46 +809,6 @@ const relatedPosts = allPosts
       } else {
         window.addEventListener(runtimeReadyEvent, initializeEngagement, { once: true });
       }
-
-      const toggleButton = document.querySelector('[data-glass-toggle]');
-
-      if (!(toggleButton instanceof HTMLButtonElement)) {
-        return;
-      }
-
-      const body = document.body;
-      const storageKey = 'lazzerex:blog-glass-enabled';
-
-      const readPreference = () => {
-        try {
-          return localStorage.getItem(storageKey) !== 'off';
-        } catch {
-          return true;
-        }
-      };
-
-      const writePreference = (enabled) => {
-        try {
-          localStorage.setItem(storageKey, enabled ? 'on' : 'off');
-        } catch {
-          return;
-        }
-      };
-
-      const applyPreference = (enabled) => {
-        body.classList.toggle('glass-disabled', !enabled);
-        toggleButton.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-        toggleButton.textContent = enabled ? 'Glass: On' : 'Glass: Off';
-      };
-
-      let isGlassEnabled = readPreference();
-      applyPreference(isGlassEnabled);
-
-      toggleButton.addEventListener('click', () => {
-        isGlassEnabled = !isGlassEnabled;
-        applyPreference(isGlassEnabled);
-        writePreference(isGlassEnabled);
-      });
     })();
   </script>
 </DesktopShellLayout>
