@@ -63,7 +63,6 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
       (() => {
         const body = document.body;
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const routeSwitchDelay = prefersReducedMotion ? 0 : 240;
         const runtimeApiMeta = document.querySelector('meta[name="lazzerex-go-api-base-url"]');
         const runtimeApiBaseUrl =
           runtimeApiMeta instanceof HTMLMetaElement
@@ -402,11 +401,16 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
           }
 
           navigating = true;
-          body.classList.add("is-navigating");
 
-          window.setTimeout(() => {
+          if (prefersReducedMotion) {
             window.location.assign(destination.toString());
-          }, routeSwitchDelay);
+            return;
+          }
+
+          body.classList.add("is-navigating");
+          requestAnimationFrame(() => {
+            window.location.assign(destination.toString());
+          });
         });
 
         window.addEventListener("pageshow", () => {
