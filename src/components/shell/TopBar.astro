@@ -1,5 +1,13 @@
 ---
 import { ChevronDown } from 'lucide-astro';
+
+const exploreLinks = [
+  { label: "Articles", href: "/" },
+  { label: "Projects", href: "/projects" },
+  { label: "My Tools", href: "/tools" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" }
+];
 ---
 
 <header class="top-bar" aria-label="Top bar">
@@ -9,7 +17,20 @@ import { ChevronDown } from 'lucide-astro';
     </div>
     <div class="author-meta">
       <p class="author-name">Lazzerex</p>
-      <span class="section-dropdown">Explore <ChevronDown size={14} strokeWidth={1.5} /></span>
+      <details class="explore-menu" data-explore-menu>
+        <summary class="section-dropdown">
+          Explore <ChevronDown size={14} strokeWidth={1.5} />
+        </summary>
+        <ul class="explore-menu-list">
+          {
+            exploreLinks.map((link) => (
+              <li>
+                <a href={link.href}>{link.label}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
     </div>
   </div>
 
@@ -17,3 +38,21 @@ import { ChevronDown } from 'lucide-astro';
     <span class="role-label">Backend, Systems & Web Development</span>
   </div>
 </header>
+
+<script>
+  const menus = document.querySelectorAll<HTMLDetailsElement>("[data-explore-menu]");
+
+  menus.forEach((menu) => {
+    document.addEventListener("click", (event) => {
+      if (menu.open && !menu.contains(event.target as Node)) {
+        menu.open = false;
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && menu.open) {
+        menu.open = false;
+      }
+    });
+  });
+</script>
