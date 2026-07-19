@@ -45,6 +45,55 @@ const { currentPath, expand = false } = Astro.props;
 }
 
 <script>
+  const glassToggleButton = document.querySelector<HTMLButtonElement>("[data-glass-toggle]");
+
+  if (glassToggleButton) {
+    const body = document.body;
+    const storageKey = "lazzerex:blog-glass-enabled";
+
+    const applyPreference = (enabled: boolean) => {
+      body.classList.toggle("glass-disabled", !enabled);
+      glassToggleButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+      glassToggleButton.textContent = enabled ? "Glass: On" : "Glass: Off";
+    };
+
+    const readPreference = (): boolean => {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored === "on" || stored === "off") {
+          return stored === "on";
+        }
+      } catch {
+        return true;
+      }
+
+      // No stored preference yet: default off on memory/CPU-constrained devices.
+      const nav = navigator as Navigator & { deviceMemory?: number };
+      const isLowPowerDevice =
+        (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4) ||
+        (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4);
+
+      return !isLowPowerDevice;
+    };
+
+    const writePreference = (enabled: boolean) => {
+      try {
+        localStorage.setItem(storageKey, enabled ? "on" : "off");
+      } catch {
+        // ignore
+      }
+    };
+
+    let isGlassEnabled = readPreference();
+    applyPreference(isGlassEnabled);
+
+    glassToggleButton.addEventListener("click", () => {
+      isGlassEnabled = !isGlassEnabled;
+      applyPreference(isGlassEnabled);
+      writePreference(isGlassEnabled);
+    });
+  }
+
   const progressBar = document.querySelector<HTMLElement>("[data-reading-progress]");
   const backToTopButton = document.querySelector<HTMLButtonElement>("[data-back-to-top]");
 
