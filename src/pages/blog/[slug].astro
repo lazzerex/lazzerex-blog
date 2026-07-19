@@ -38,6 +38,22 @@ const ogImage = (() => {
 
   return new URL(post.cover, Astro.site).toString();
 })();
+
+const allPosts = await getAllPosts();
+const currentIndex = allPosts.findIndex((candidate) => candidate.slug === post.slug);
+const newerPost = currentIndex > 0 ? allPosts[currentIndex - 1] : undefined;
+const olderPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : undefined;
+
+const relatedPosts = allPosts
+  .filter((candidate) => candidate.slug !== post.slug)
+  .map((candidate) => ({
+    post: candidate,
+    sharedTags: candidate.tags.filter((tag) => post.tags.includes(tag)).length
+  }))
+  .filter((entry) => entry.sharedTags > 0)
+  .sort((a, b) => b.sharedTags - a.sharedTags || b.post.date.getTime() - a.post.date.getTime())
+  .slice(0, 3)
+  .map((entry) => entry.post);
 ---
 
 <DesktopShellLayout
@@ -96,23 +112,34 @@ const ogImage = (() => {
         />
       </div>
 
+      {
+        post.toc.length > 1 && (
+          <details class="reader-toc">
+            <summary>Contents</summary>
+            <ul>
+              {post.toc.map((entry) => (
+                <li style={`--toc-level: ${Math.min(entry.level, 4)}`}>
+                  <a href={`#${entry.id}`}>{entry.text}</a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )
+      }
+
       <div class="reader-content">
         {
           post.blocks.map((block) => {
             if (block.type === "heading") {
-              if (block.level === 1) {
-                return <h2>{block.text}</h2>;
-              }
-
-              if (block.level === 2) {
-                return <h2>{block.text}</h2>;
+              if (block.level === 1 || block.level === 2) {
+                return <h2 id={block.id}>{block.text}</h2>;
               }
 
               if (block.level === 3) {
-                return <h3>{block.text}</h3>;
+                return <h3 id={block.id}>{block.text}</h3>;
               }
 
-              return <h4>{block.text}</h4>;
+              return <h4 id={block.id}>{block.text}</h4>;
             }
 
             if (block.type === "paragraph") {
@@ -184,6 +211,43 @@ const ogImage = (() => {
               Published Notion page
             </a>
           </p>
+        )
+      }
+
+      {
+        (newerPost || olderPost) && (
+          <nav class="reader-adjacent" aria-label="Post navigation">
+            {olderPost && (
+              <a class="reader-adjacent-link" href={`/blog/${olderPost.slug}`} data-astro-prefetch>
+                <span class="reader-adjacent-label">Older</span>
+                <span class="reader-adjacent-title">{olderPost.title}</span>
+              </a>
+            )}
+            {newerPost && (
+              <a class="reader-adjacent-link reader-adjacent-newer" href={`/blog/${newerPost.slug}`} data-astro-prefetch>
+                <span class="reader-adjacent-label">Newer</span>
+                <span class="reader-adjacent-title">{newerPost.title}</span>
+              </a>
+            )}
+          </nav>
+        )
+      }
+
+      {
+        relatedPosts.length > 0 && (
+          <section class="reader-related" aria-label="Related articles">
+            <h2>Related Articles</h2>
+            <ul>
+              {relatedPosts.map((relatedPost) => (
+                <li>
+                  <a href={`/blog/${relatedPost.slug}`} data-astro-prefetch>
+                    <span class="reader-related-title">{relatedPost.title}</span>
+                    <span class="reader-related-meta">{relatedPost.primaryTag} · {relatedPost.dateLabel}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         )
       }
 
