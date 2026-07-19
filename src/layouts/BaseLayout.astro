@@ -57,12 +57,14 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div class="page-loading-bar" data-page-loading-bar aria-hidden="true"></div>
     <slot />
 
     <script is:inline>
       (() => {
         const body = document.body;
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const loadingBar = document.querySelector('[data-page-loading-bar]');
         const runtimeApiMeta = document.querySelector('meta[name="lazzerex-go-api-base-url"]');
         const runtimeApiBaseUrl =
           runtimeApiMeta instanceof HTMLMetaElement
@@ -401,6 +403,10 @@ const runtimeApiBaseUrl = String(import.meta.env.PUBLIC_GO_API_BASE_URL || "")
           }
 
           navigating = true;
+
+          if (loadingBar instanceof HTMLElement) {
+            loadingBar.classList.add("is-active");
+          }
 
           if (prefersReducedMotion) {
             window.location.assign(destination.toString());
