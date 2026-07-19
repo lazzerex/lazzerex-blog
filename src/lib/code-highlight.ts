@@ -54,6 +54,21 @@ function normalizeLanguage(rawLanguage: string): string | undefined {
   return BUNDLED_LANGS.includes(aliased) ? aliased : undefined;
 }
 
+// Notion's code-block language dropdown doesn't include every Shiki-supported
+// language (e.g. Haxe). Typing "@lang:xxx" as the block's first line forces
+// that language regardless of what Notion reports; the marker line is stripped
+// before rendering.
+const LANGUAGE_OVERRIDE_PATTERN = /^@lang:([a-zA-Z0-9+#._-]+)[ \t]*\r?\n/;
+
+export function applyLanguageOverride(code: string, language: string): { code: string; language: string } {
+  const match = LANGUAGE_OVERRIDE_PATTERN.exec(code);
+  if (!match) {
+    return { code, language };
+  }
+
+  return { code: code.slice(match[0].length), language: match[1] };
+}
+
 export async function highlightCode(code: string, rawLanguage: string): Promise<string | undefined> {
   const lang = normalizeLanguage(rawLanguage);
   if (!lang) {
