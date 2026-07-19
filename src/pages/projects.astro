@@ -1,0 +1,50 @@
+---
+import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
+import { projects, GITHUB_USERNAME } from "../data/projects";
+import { Star } from "lucide-astro";
+---
+
+<DesktopShellLayout
+  title="Lazzerex | Projects"
+  description="Software projects built by Lazzerex, from a hobby operating system to a network proxy."
+  currentPath="/projects"
+>
+  <section class="content-window">
+    <p class="window-path" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="path-muted">→</span>
+      <span>Projects</span>
+    </p>
+
+    <div class="project-grid">
+      {
+        projects.map((project) => (
+          <a
+            class="project-card"
+            href={`https://github.com/${GITHUB_USERNAME}/${project.name}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="project-card-header">
+              <span class="project-card-name">{project.name}</span>
+              <span class="project-card-badge">Public</span>
+            </div>
+            <p class="project-card-description">{project.description}</p>
+            <div class="project-card-footer">
+              <span class="project-card-language">
+                <span class="language-dot" style={`background:${project.language.color}`} />
+                {project.language.name}
+              </span>
+              {project.stars !== undefined && (
+                <span class="project-card-stars">
+                  <Star size={13} strokeWidth={1.5} />
+                  {project.stars}
+                </span>
+              )}
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+</DesktopShellLayout>

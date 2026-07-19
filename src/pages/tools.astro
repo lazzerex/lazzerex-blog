@@ -1,0 +1,51 @@
+---
+import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
+import { tools, GITHUB_USERNAME } from "../data/projects";
+---
+
+<DesktopShellLayout
+  title="Lazzerex | My Tools"
+  description="Small utilities and side tools built by Lazzerex."
+  currentPath="/tools"
+>
+  <section class="content-window">
+    <p class="window-path" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="path-muted">→</span>
+      <span>My Tools</span>
+    </p>
+
+    <ul class="tool-list">
+      {
+        tools.map((tool) => (
+          <li class="tool-item">
+            <a
+              class="tool-item-name"
+              href={`https://github.com/${GITHUB_USERNAME}/${tool.name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {tool.name}
+            </a>
+            <p class="tool-item-description">{tool.description}</p>
+            {tool.topics && (
+              <ul class="tool-item-topics" aria-label="Topics">
+                {tool.topics.map((topic) => (
+                  <li>{topic}</li>
+                ))}
+              </ul>
+            )}
+            <div class="tool-item-footer">
+              <span class="project-card-language">
+                <span class="language-dot" style={`background:${tool.language.color}`} />
+                {tool.language.name}
+              </span>
+              {tool.license && <span>{tool.license} License</span>}
+              <span>Updated {tool.updated}</span>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</DesktopShellLayout>
