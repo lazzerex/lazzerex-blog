@@ -168,6 +168,12 @@ body.is-navigating .shell-container {
   max-height: none;
 }
 
+.shell-container.is-expanded .content-panel,
+.shell-container.is-expanded .sidebar-nav {
+  overflow: visible;
+  min-height: auto;
+}
+
 .top-bar {
   height: 52px;
   padding: 0 var(--space-4);
@@ -215,6 +221,10 @@ body.is-navigating .shell-container {
   line-height: 1.2;
 }
 
+.explore-menu {
+  position: relative;
+}
+
 .section-dropdown {
   font-size: 12px;
   font-weight: 500;
@@ -224,6 +234,49 @@ body.is-navigating .shell-container {
   gap: 6px;
   letter-spacing: 0.05em;
   line-height: 1.2;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-dropdown::-webkit-details-marker {
+  display: none;
+}
+
+.explore-menu[open] .section-dropdown {
+  color: var(--color-text-primary);
+}
+
+.explore-menu-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  min-width: 160px;
+  list-style: none;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+}
+
+.explore-menu-list a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.explore-menu-list a:hover {
+  background: var(--color-bg-panel-elevated);
+  color: var(--color-text-primary);
 }
 
 .role-label {
