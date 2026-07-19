@@ -16,7 +16,7 @@ export interface Tool {
   language: RepoLanguage;
   topics?: string[];
   license?: string;
-  updated: string;
+  updated?: string;
 }
 
 export const GITHUB_USERNAME = "lazzerex";
@@ -48,41 +48,39 @@ export const projects: Project[] = [
     language: GO
   },
   {
+    name: "aegis",
+    description: "A high-performance network proxy built with Rust and Golang.",
+    language: RUST
+  },
+  {
+    name: "leetarena",
+    description: "A LeetCode trading card game.",
+    language: SVELTE
+  },
+  {
+    name: "android-homelab",
+    description: "Turning an old OPPO A37f into a homelab server.",
+    language: GO
+  }
+];
+
+export const tools: Tool[] = [
+  {
     name: "pixel-forge",
     description:
       "High-performance image converter supporting batch processing, multiple formats, and resizing. Including Rust CLI and Windows GUI.",
     language: CSHARP
   },
   {
-    name: "aegis",
-    description: "A high-performance network proxy built with Rust and Golang.",
-    language: RUST
-  },
-  {
     name: "customer-feedback-plugin",
     description: "A WordPress plugin for collecting customers' feedback.",
     language: PHP
-  }
-];
-
-export const tools: Tool[] = [
+  },
   {
     name: "gitrpg",
     description: "Transform your GitHub activity into RPG stats and characters.",
     language: GO,
     updated: "last month"
-  },
-  {
-    name: "leetarena",
-    description: "A LeetCode trading card game.",
-    language: SVELTE,
-    updated: "Jun 18"
-  },
-  {
-    name: "android-homelab",
-    description: "Turning an old OPPO A37f into a homelab server.",
-    language: GO,
-    updated: "last week"
   },
   {
     name: "xpfetch",
