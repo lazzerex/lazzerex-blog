@@ -21,7 +21,6 @@
 
 .page-frame::before {
   background: url("/images/forest-bg.jpg") center/cover no-repeat;
-  filter: blur(6px) brightness(0.54) saturate(0.88);
   transform: scale(1.04);
   opacity: 0.95;
 }
@@ -253,7 +252,6 @@ body.is-navigating .shell-container {
   z-index: 0;
   pointer-events: none;
   background: url("/images/folder-bg.jfif") center/cover no-repeat;
-  filter: blur(11px) brightness(0.48) saturate(0.78);
   transform: scale(1.06);
   opacity: 0.72;
 }
