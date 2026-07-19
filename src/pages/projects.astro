@@ -16,35 +16,34 @@ import { Star } from "lucide-astro";
       <span>Projects</span>
     </p>
 
-    <div class="project-grid">
+    <ul class="repo-list">
       {
         projects.map((project) => (
-          <a
-            class="project-card"
-            href={`https://github.com/${GITHUB_USERNAME}/${project.name}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div class="project-card-header">
-              <span class="project-card-name">{project.name}</span>
-              <span class="project-card-badge">Public</span>
-            </div>
-            <p class="project-card-description">{project.description}</p>
-            <div class="project-card-footer">
-              <span class="project-card-language">
+          <li class="repo-item">
+            <a
+              class="repo-item-name"
+              href={`https://github.com/${GITHUB_USERNAME}/${project.name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {project.name}
+            </a>
+            <p class="repo-item-description">{project.description}</p>
+            <div class="repo-item-footer">
+              <span class="repo-item-language">
                 <span class="language-dot" style={`background:${project.language.color}`} />
                 {project.language.name}
               </span>
               {project.stars !== undefined && (
-                <span class="project-card-stars">
+                <span class="repo-item-stars">
                   <Star size={13} strokeWidth={1.5} />
                   {project.stars}
                 </span>
               )}
             </div>
-          </a>
+          </li>
         ))
       }
-    </div>
+    </ul>
   </section>
 </DesktopShellLayout>

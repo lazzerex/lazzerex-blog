@@ -15,28 +15,28 @@ import { tools, GITHUB_USERNAME } from "../data/projects";
       <span>My Tools</span>
     </p>
 
-    <ul class="tool-list">
+    <ul class="repo-list">
       {
         tools.map((tool) => (
-          <li class="tool-item">
+          <li class="repo-item">
             <a
-              class="tool-item-name"
+              class="repo-item-name"
               href={`https://github.com/${GITHUB_USERNAME}/${tool.name}`}
               target="_blank"
               rel="noopener noreferrer"
             >
               {tool.name}
             </a>
-            <p class="tool-item-description">{tool.description}</p>
+            <p class="repo-item-description">{tool.description}</p>
             {tool.topics && (
-              <ul class="tool-item-topics" aria-label="Topics">
+              <ul class="repo-item-topics" aria-label="Topics">
                 {tool.topics.map((topic) => (
                   <li>{topic}</li>
                 ))}
               </ul>
             )}
-            <div class="tool-item-footer">
-              <span class="project-card-language">
+            <div class="repo-item-footer">
+              <span class="repo-item-language">
                 <span class="language-dot" style={`background:${tool.language.color}`} />
                 {tool.language.name}
               </span>
