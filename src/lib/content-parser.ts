@@ -21,6 +21,7 @@ export type RichContentBlock =
       type: "code";
       language: string;
       code: string;
+      html?: string;
     }
   | {
       type: "image";
