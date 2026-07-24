@@ -2,7 +2,45 @@
 import DesktopShellLayout from "../layouts/DesktopShellLayout.astro";
 import { getExplorerPosts } from "../lib/posts";
 import { getTagColor } from "../lib/tags";
-import { ChevronLeft, ChevronRight, FileText } from 'lucide-astro';
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Code2,
+  Atom,
+  Music2,
+  BrainCircuit,
+  Gamepad2,
+  BookOpen,
+  SquareTerminal,
+  MonitorCog,
+  Cpu,
+  Sigma,
+  ShieldAlert,
+  Network,
+  Sparkles,
+  Palette
+} from 'lucide-astro';
+
+const TAG_ICONS: Record<string, typeof FileText> = {
+  Programming: Code2,
+  Physics: Atom,
+  Music: Music2,
+  "Artificial Intelligence": BrainCircuit,
+  Gaming: Gamepad2,
+  NES: Gamepad2,
+  Manga: BookOpen,
+  Linux: SquareTerminal,
+  "Operating System": MonitorCog,
+  Hardware: Cpu,
+  Math: Sigma,
+  "Cyber Security": ShieldAlert,
+  "System Architecture": Network,
+  Surrealism: Palette,
+  Technology: Sparkles
+};
+
+const getTagIcon = (tag: string) => TAG_ICONS[tag] ?? FileText;
 
 const postSummaries = await getExplorerPosts();
 const PAGE_SIZE = 8;
@@ -30,32 +68,35 @@ const pageCount = Math.max(1, Math.ceil(postSummaries.length / PAGE_SIZE));
 
       <ul class="article-table-body" data-page-size={PAGE_SIZE}>
         {
-          postSummaries.map((post, index) => (
-            <li
-              class="article-row"
-              role="row"
-              style={`--row-accent:${getTagColor(post.primaryTag)}`}
-              data-row-index={index}
-              data-post-slug={post.slug}
-              data-preview-title={post.title}
-              data-preview-cover={post.cover}
-              data-preview-summary={post.summary}
-              data-preview-tags={post.tags.join(", ")}
-              data-preview-color={getTagColor(post.primaryTag)}
-              data-preview-date={post.dateLabel}
-              data-preview-author={post.author}
-            >
-              <a class="article-name" href={`/blog/${post.slug}`} role="cell" data-astro-prefetch>
-                <FileText size={16} strokeWidth={1.5} color="var(--row-accent)" />
-                <span class="article-title">{post.title}</span>
-              </a>
-              <span class="article-category" role="cell">
-                <span class="category-dot language-dot" style={`background:${getTagColor(post.primaryTag)}`} />
-                {post.primaryTag}
-              </span>
-              <span class="article-date" role="cell">{post.dateLabel}</span>
-            </li>
-          ))
+          postSummaries.map((post, index) => {
+            const Icon = getTagIcon(post.primaryTag);
+            return (
+              <li
+                class="article-row"
+                role="row"
+                style={`--row-accent:${getTagColor(post.primaryTag)}`}
+                data-row-index={index}
+                data-post-slug={post.slug}
+                data-preview-title={post.title}
+                data-preview-cover={post.cover}
+                data-preview-summary={post.summary}
+                data-preview-tags={post.tags.join(", ")}
+                data-preview-color={getTagColor(post.primaryTag)}
+                data-preview-date={post.dateLabel}
+                data-preview-author={post.author}
+              >
+                <a class="article-name" href={`/blog/${post.slug}`} role="cell" data-astro-prefetch>
+                  <Icon size={16} strokeWidth={1.5} color="var(--row-accent)" />
+                  <span class="article-title">{post.title}</span>
+                </a>
+                <span class="article-category" role="cell">
+                  <span class="category-dot language-dot" style={`background:${getTagColor(post.primaryTag)}`} />
+                  {post.primaryTag}
+                </span>
+                <span class="article-date" role="cell">{post.dateLabel}</span>
+              </li>
+            );
+          })
         }
       </ul>
 
