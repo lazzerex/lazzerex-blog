@@ -77,6 +77,7 @@ const relatedPosts = allPosts
       </p>
     </div>
 
+    <div class="reader-layout">
     <article class="reader-article">
       <header class="reader-header">
         <h1>{post.title}</h1>
@@ -300,6 +301,22 @@ const relatedPosts = allPosts
         </section>
       </section>
     </article>
+
+    {
+      post.toc.length > 1 && (
+        <aside class="reader-toc-rail" aria-label="Table of contents">
+          <p class="reader-toc-rail-title">On this page</p>
+          <ul data-toc-rail-list>
+            {post.toc.map((entry) => (
+              <li style={`--toc-level: ${Math.min(entry.level, 4)}`}>
+                <a href={`#${entry.id}`} data-toc-target={entry.id}>{entry.text}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+    </div>
   </section>
 
   <script is:inline define:vars={{ postSlug: post.slug, postTitle: post.title }}>
@@ -810,5 +827,49 @@ const relatedPosts = allPosts
         window.addEventListener(runtimeReadyEvent, initializeEngagement, { once: true });
       }
     })();
+  </script>
+
+  <script>
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-toc-target]"));
+
+    if (tocLinks.length > 0) {
+      const linkByTargetId = new Map(tocLinks.map((link) => [link.getAttribute("data-toc-target"), link]));
+      const headings = Array.from(document.querySelectorAll<HTMLElement>(".reader-content :is(h2, h3, h4)[id]")).filter(
+        (heading) => linkByTargetId.has(heading.id)
+      );
+
+      const setActiveLink = (id: string | null) => {
+        for (const link of tocLinks) {
+          link.classList.toggle("is-active-section", link.getAttribute("data-toc-target") === id);
+        }
+      };
+
+      const scrollRoot = document.getElementById("main-content");
+
+      if (headings.length > 0 && scrollRoot && "IntersectionObserver" in window) {
+        const visibleIds = new Set<string>();
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                visibleIds.add(entry.target.id);
+              } else {
+                visibleIds.delete(entry.target.id);
+              }
+            }
+
+            const firstVisible = headings.find((heading) => visibleIds.has(heading.id));
+            if (firstVisible) {
+              setActiveLink(firstVisible.id);
+            }
+          },
+          { root: scrollRoot, rootMargin: "0px 0px -70% 0px", threshold: 0 }
+        );
+
+        headings.forEach((heading) => observer.observe(heading));
+        setActiveLink(headings[0].id);
+      }
+    }
   </script>
 </DesktopShellLayout>
