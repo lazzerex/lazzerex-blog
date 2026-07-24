@@ -599,7 +599,8 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.reader-toc-rail {
+.reader-toc-rail,
+.reader-toc-rail-slot {
   display: none;
 }
 
@@ -614,16 +615,29 @@
     display: none;
   }
 
+  .reader-toc-rail-slot {
+    display: block;
+  }
+
   .reader-toc-rail {
     display: block;
-    position: sticky;
-    top: var(--space-4);
-    max-height: calc(100vh - (var(--space-4) * 2));
+    position: fixed;
+    top: 88px;
+    width: 220px;
+    max-height: calc(100vh - 104px);
     overflow: auto;
     padding: var(--space-3) var(--space-4);
     border: 1px solid rgba(186, 190, 198, 0.16);
     border-radius: var(--radius-sm);
-    background: rgba(18, 20, 24, 0.55);
+    background: rgba(18, 20, 24, 0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .reader-toc-rail.is-positioned {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .reader-toc-rail-title {
