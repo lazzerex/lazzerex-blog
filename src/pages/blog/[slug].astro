@@ -305,10 +305,10 @@ const relatedPosts = allPosts
     {
       post.toc.length > 1 && (
         <>
-          <div class="reader-toc-rail-slot" aria-hidden="true" data-toc-rail-slot />
-          <aside class="reader-toc-rail" aria-label="Table of contents" data-toc-rail>
+          <div class="reader-toc-rail-slot" aria-hidden="true" />
+          <aside class="reader-toc-rail" aria-label="Table of contents">
             <p class="reader-toc-rail-title">On this page</p>
-            <ul data-toc-rail-list>
+            <ul>
               {post.toc.map((entry) => (
                 <li style={`--toc-level: ${Math.min(entry.level, 4)}`}>
                   <a href={`#${entry.id}`} data-toc-target={entry.id}>{entry.text}</a>
@@ -835,29 +835,11 @@ const relatedPosts = allPosts
   <script>
     // Blog detail pages render with `expand`, which scrolls the real
     // window/document (see reading-progress + back-to-top in AppShell)
-    // rather than the internal `#main-content` panel — so both the TOC
-    // rail positioning and the scroll-spy below track the viewport, not
-    // any internal scroll container.
-    const tocRail = document.querySelector<HTMLElement>("[data-toc-rail]");
-    const tocRailSlot = document.querySelector<HTMLElement>("[data-toc-rail-slot]");
-
-    if (tocRail && tocRailSlot) {
-      const positionRail = () => {
-        if (tocRailSlot.offsetParent === null) {
-          // Rail is hidden below the desktop breakpoint; nothing to position.
-          tocRail.classList.remove("is-positioned");
-          return;
-        }
-
-        const slotRect = tocRailSlot.getBoundingClientRect();
-        tocRail.style.left = `${Math.round(slotRect.left)}px`;
-        tocRail.classList.add("is-positioned");
-      };
-
-      positionRail();
-      window.addEventListener("resize", positionRail);
-    }
-
+    // rather than the internal `#main-content` panel — so the scroll-spy
+    // below tracks the viewport, not any internal scroll container.
+    // The rail itself is positioned with pure CSS (fixed + right offset,
+    // same pattern as the back-to-top button) rather than measured via
+    // JS, so it can't drift or overflow the viewport at odd widths.
     const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-toc-target]"));
 
     if (tocLinks.length > 0) {
